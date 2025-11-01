@@ -86,7 +86,7 @@ export const AddUserDialog = ({ guardians, onAddUser }: AddUserDialogProps) => {
       <DialogTrigger asChild>
         <Button>Adicionar Novo Usuário</Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Adicionar Novo Usuário</DialogTitle>
           <DialogDescription>

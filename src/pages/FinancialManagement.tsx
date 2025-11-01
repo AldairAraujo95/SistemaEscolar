@@ -29,6 +29,7 @@ const FinancialManagement = () => {
   const [boletos, setBoletos] = useState<Boleto[]>(initialBoletos);
   const [guardians] = useState<Guardian[]>(initialGuardians);
   const [selectedGuardian, setSelectedGuardian] = useState<string>("all");
+  const [selectedStatus, setSelectedStatus] = useState<Boleto['status'] | 'all'>('all');
   const [editingBoleto, setEditingBoleto] = useState<Boleto | null>(null);
 
   const financialSummary = useMemo(() => {
@@ -65,11 +66,15 @@ const FinancialManagement = () => {
   };
 
   const filteredBoletos = useMemo(() => {
-    if (selectedGuardian === "all") {
-      return boletos;
+    let filtered = boletos;
+    if (selectedGuardian !== "all") {
+      filtered = filtered.filter((b) => b.guardianId === selectedGuardian);
     }
-    return boletos.filter((b) => b.guardianId === selectedGuardian);
-  }, [boletos, selectedGuardian]);
+    if (selectedStatus !== "all") {
+      filtered = filtered.filter((b) => b.status === selectedStatus);
+    }
+    return filtered;
+  }, [boletos, selectedGuardian, selectedStatus]);
 
   const handleUpdateBoleto = (updatedBoleto: Boleto) => {
     setBoletos(boletos.map(b => b.id === updatedBoleto.id ? updatedBoleto : b));
@@ -124,21 +129,37 @@ const FinancialManagement = () => {
           <CardDescription>Visualize e gerencie todos os boletos.</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="mb-4 max-w-sm">
-            <Label htmlFor="guardian-filter">Filtrar por Responsável</Label>
-            <Select value={selectedGuardian} onValueChange={setSelectedGuardian}>
-              <SelectTrigger id="guardian-filter">
-                <SelectValue placeholder="Selecione um responsável" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos os Responsáveis</SelectItem>
-                {guardians.map((guardian) => (
-                  <SelectItem key={guardian.id} value={guardian.id}>
-                    {guardian.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="flex flex-col sm:flex-row gap-4 mb-4">
+            <div className="w-full sm:max-w-sm">
+              <Label htmlFor="guardian-filter">Filtrar por Responsável</Label>
+              <Select value={selectedGuardian} onValueChange={setSelectedGuardian}>
+                <SelectTrigger id="guardian-filter">
+                  <SelectValue placeholder="Selecione um responsável" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os Responsáveis</SelectItem>
+                  {guardians.map((guardian) => (
+                    <SelectItem key={guardian.id} value={guardian.id}>
+                      {guardian.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="w-full sm:max-w-xs">
+              <Label htmlFor="status-filter">Filtrar por Status</Label>
+              <Select value={selectedStatus} onValueChange={(value) => setSelectedStatus(value as Boleto['status'] | 'all')}>
+                <SelectTrigger id="status-filter">
+                  <SelectValue placeholder="Selecione um status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os Status</SelectItem>
+                  <SelectItem value="pago">Pago</SelectItem>
+                  <SelectItem value="a vencer">A Vencer</SelectItem>
+                  <SelectItem value="vencido">Vencido</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           <div className="border rounded-md">

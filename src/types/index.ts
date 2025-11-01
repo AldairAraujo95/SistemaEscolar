@@ -20,3 +20,13 @@ export interface Student {
   guardianId: string;
   class: string; // Turma
 }
+
+export interface Discipline {
+  id: string;
+  name: string;
+}
+
+export interface Class {
+  id: string;
+  name: string;
+}

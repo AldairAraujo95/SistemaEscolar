@@ -1,14 +1,24 @@
-import { NavLink } from "react-router-dom";
-import { BookOpen, Calendar, Activity, School } from "lucide-react";
+import { NavLink, useNavigate } from "react-router-dom";
+import { BookOpen, Calendar, Activity, School, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MadeWithDyad } from "../made-with-dyad";
+import { useAuth } from "@/context/AuthContext";
+import { Button } from "@/components/ui/button";
 
 const ProfessorSidebar = () => {
+  const { logout } = useAuth();
+  const navigate = useNavigate();
+
   const navItems = [
     { to: "/professor/academic", icon: BookOpen, label: "Gestão Acadêmica" },
     { to: "/professor/feed", icon: Activity, label: "Feed de Atividades" },
     { to: "/professor/calendar", icon: Calendar, label: "Agenda Escolar" },
   ];
+
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+  };
 
   return (
     <aside className="w-64 bg-white dark:bg-gray-950 border-r border-gray-200 dark:border-gray-800 flex flex-col">
@@ -35,6 +45,12 @@ const ProfessorSidebar = () => {
           </NavLink>
         ))}
       </nav>
+      <div className="p-4 border-t border-gray-200 dark:border-gray-800">
+        <Button variant="ghost" className="w-full justify-start" onClick={handleLogout}>
+          <LogOut className="mr-2 h-4 w-4" />
+          Sair
+        </Button>
+      </div>
       <div className="mt-auto">
         <MadeWithDyad />
       </div>

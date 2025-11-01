@@ -1,15 +1,25 @@
-import { NavLink } from "react-router-dom";
-import { DollarSign, Calendar, Activity, School, ClipboardCheck } from "lucide-react";
+import { NavLink, useNavigate } from "react-router-dom";
+import { DollarSign, Calendar, Activity, School, ClipboardCheck, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MadeWithDyad } from "../made-with-dyad";
+import { useAuth } from "@/context/AuthContext";
+import { Button } from "@/components/ui/button";
 
 const AlunoSidebar = () => {
+  const { logout } = useAuth();
+  const navigate = useNavigate();
+
   const navItems = [
     { to: "/aluno/financial", icon: DollarSign, label: "Financeiro" },
     { to: "/aluno/feed", icon: Activity, label: "Feed de Atividades" },
     { to: "/aluno/calendar", icon: Calendar, label: "Agenda Escolar" },
     { to: "/aluno/grades", icon: ClipboardCheck, label: "Minhas Notas" },
   ];
+
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+  };
 
   return (
     <aside className="w-64 bg-white dark:bg-gray-950 border-r border-gray-200 dark:border-gray-800 flex flex-col">
@@ -36,6 +46,12 @@ const AlunoSidebar = () => {
           </NavLink>
         ))}
       </nav>
+      <div className="p-4 border-t border-gray-200 dark:border-gray-800">
+        <Button variant="ghost" className="w-full justify-start" onClick={handleLogout}>
+          <LogOut className="mr-2 h-4 w-4" />
+          Sair
+        </Button>
+      </div>
       <div className="mt-auto">
         <MadeWithDyad />
       </div>

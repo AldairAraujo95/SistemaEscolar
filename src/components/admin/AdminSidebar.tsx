@@ -1,4 +1,4 @@
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   Users,
@@ -7,11 +7,17 @@ import {
   Calendar,
   Activity,
   School,
+  LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MadeWithDyad } from "../made-with-dyad";
+import { useAuth } from "@/context/AuthContext";
+import { Button } from "@/components/ui/button";
 
 const AdminSidebar = () => {
+  const { logout } = useAuth();
+  const navigate = useNavigate();
+
   const navItems = [
     { to: "/admin", icon: LayoutDashboard, label: "Dashboard" },
     { to: "/admin/users", icon: Users, label: "Gestão de Usuários" },
@@ -20,6 +26,11 @@ const AdminSidebar = () => {
     { to: "/admin/calendar", icon: Calendar, label: "Agenda Escolar" },
     { to: "/admin/feed", icon: Activity, label: "Feed de Atividades" },
   ];
+
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+  };
 
   return (
     <aside className="w-64 bg-white dark:bg-gray-950 border-r border-gray-200 dark:border-gray-800 flex flex-col">
@@ -47,6 +58,12 @@ const AdminSidebar = () => {
           </NavLink>
         ))}
       </nav>
+      <div className="p-4 border-t border-gray-200 dark:border-gray-800">
+        <Button variant="ghost" className="w-full justify-start" onClick={handleLogout}>
+          <LogOut className="mr-2 h-4 w-4" />
+          Sair
+        </Button>
+      </div>
       <div className="mt-auto">
         <MadeWithDyad />
       </div>

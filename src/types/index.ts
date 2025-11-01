@@ -38,3 +38,11 @@ export interface Grade {
   grade: number | null;
   unit: number; // 1ª Unidade, 2ª Unidade, etc.
 }
+
+export interface Boleto {
+  id: string;
+  guardianId: string;
+  amount: number;
+  dueDate: string; // Formato YYYY-MM-DD
+  status: 'pago' | 'a vencer' | 'vencido';
+}

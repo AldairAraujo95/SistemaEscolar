@@ -91,7 +91,7 @@ const SchoolCalendar = () => {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card className="md:col-span-1">
           <CardContent className="p-0 flex justify-center">
             <Calendar
@@ -113,7 +113,7 @@ const SchoolCalendar = () => {
           </CardContent>
         </Card>
 
-        <Card className="md:col-span-2">
+        <Card className="md:col-span-3">
           <CardHeader>
             <CardTitle>
               Eventos para {selectedDate ? format(selectedDate, "PPP", { locale: ptBR }) : "Nenhuma data selecionada"}

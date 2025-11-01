@@ -55,3 +55,11 @@ export interface CalendarEvent {
   description: string;
   type: 'event' | 'holiday' | 'exam' | 'reminder';
 }
+
+export interface Activity {
+  id: string;
+  classId: string;
+  disciplineId: string;
+  description: string;
+  dueDate: Date;
+}

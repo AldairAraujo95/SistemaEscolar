@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useEffect } from "react";
 import {
   Select,
   SelectContent,
@@ -30,28 +30,28 @@ export const StudentGradesManager = ({
 }: StudentGradesManagerProps) => {
   const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
+  const [selectedUnit, setSelectedUnit] = useState<number>(1);
   const [currentGrades, setCurrentGrades] = useState<{ [disciplineId: string]: string }>({});
 
-  const studentsInClass = useMemo(() => {
-    if (!selectedClassId) return [];
+  const studentsInClass = students.filter(student => {
     const selectedClassName = classes.find(c => c.id === selectedClassId)?.name;
-    return students.filter((student) => student.class === selectedClassName);
-  }, [selectedClassId, students, classes]);
+    return student.class === selectedClassName;
+  });
 
-  const handleStudentSelect = (studentId: string) => {
-    setSelectedStudentId(studentId);
-    const studentGrades = grades.filter(g => g.studentId === studentId);
-    const gradesMap: { [disciplineId: string]: string } = {};
-    disciplines.forEach(discipline => {
-      const grade = studentGrades.find(g => g.disciplineId === discipline.id);
-      gradesMap[discipline.id] = grade?.grade?.toString() ?? "";
-    });
-    setCurrentGrades(gradesMap);
-  };
+  useEffect(() => {
+    if (selectedStudentId) {
+      const studentGradesForUnit = grades.filter(g => g.studentId === selectedStudentId && g.unit === selectedUnit);
+      const gradesMap: { [disciplineId: string]: string } = {};
+      disciplines.forEach(discipline => {
+        const grade = studentGradesForUnit.find(g => g.disciplineId === discipline.id);
+        gradesMap[discipline.id] = grade?.grade?.toString() ?? "";
+      });
+      setCurrentGrades(gradesMap);
+    } else {
+      setCurrentGrades({});
+    }
+  }, [selectedStudentId, selectedUnit, grades, disciplines]);
 
-  const handleGradeInputChange = (disciplineId: string, value: string) => {
-    setCurrentGrades(prev => ({ ...prev, [disciplineId]: value }));
-  };
 
   const handleSaveGrades = () => {
     if (!selectedStudentId) return;
@@ -61,18 +61,17 @@ export const StudentGradesManager = ({
     disciplines.forEach(discipline => {
       const gradeValueStr = currentGrades[discipline.id];
       const gradeValue = gradeValueStr ? parseFloat(gradeValueStr) : null;
-      const existingGradeIndex = updatedGrades.findIndex(g => g.studentId === selectedStudentId && g.disciplineId === discipline.id);
+      const existingGradeIndex = updatedGrades.findIndex(g => g.studentId === selectedStudentId && g.disciplineId === discipline.id && g.unit === selectedUnit);
 
       if (existingGradeIndex !== -1) {
-        // Update existing grade
         updatedGrades[existingGradeIndex] = { ...updatedGrades[existingGradeIndex], grade: isNaN(gradeValue as number) ? null : gradeValue };
       } else if (gradeValue !== null && !isNaN(gradeValue)) {
-        // Add new grade if it doesn't exist and a value was entered
         updatedGrades.push({
           id: uuidv4(),
           studentId: selectedStudentId,
           disciplineId: discipline.id,
           grade: gradeValue,
+          unit: selectedUnit,
         });
       }
     });
@@ -82,13 +81,12 @@ export const StudentGradesManager = ({
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row gap-4 items-end">
-        <div className="w-full sm:w-1/2">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
+        <div className="w-full">
           <Label htmlFor="class-select">Turma</Label>
           <Select onValueChange={value => {
             setSelectedClassId(value);
             setSelectedStudentId(null);
-            setCurrentGrades({});
           }}>
             <SelectTrigger id="class-select">
               <SelectValue placeholder="Selecione uma turma" />
@@ -102,15 +100,15 @@ export const StudentGradesManager = ({
             </SelectContent>
           </Select>
         </div>
-        <div className="w-full sm:w-1/2">
+        <div className="w-full">
           <Label htmlFor="student-select">Aluno</Label>
           <Select
-            onValueChange={handleStudentSelect}
+            onValueChange={setSelectedStudentId}
             disabled={!selectedClassId || studentsInClass.length === 0}
             value={selectedStudentId ?? ""}
           >
             <SelectTrigger id="student-select">
-              <SelectValue placeholder={selectedClassId ? "Selecione um aluno" : "Selecione uma turma primeiro"} />
+              <SelectValue placeholder={selectedClassId ? "Selecione um aluno" : "Selecione uma turma"} />
             </SelectTrigger>
             <SelectContent>
               {studentsInClass.map((student) => (
@@ -121,12 +119,30 @@ export const StudentGradesManager = ({
             </SelectContent>
           </Select>
         </div>
+        <div className="w-full">
+          <Label htmlFor="unit-select">Unidade</Label>
+          <Select
+            value={selectedUnit.toString()}
+            onValueChange={value => setSelectedUnit(parseInt(value))}
+            disabled={!selectedStudentId}
+          >
+            <SelectTrigger id="unit-select">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="1">1ª Unidade</SelectItem>
+              <SelectItem value="2">2ª Unidade</SelectItem>
+              <SelectItem value="3">3ª Unidade</SelectItem>
+              <SelectItem value="4">4ª Unidade</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {selectedStudentId && (
         <div>
           <h3 className="text-lg font-medium mb-2 mt-4">
-            Notas de {students.find(s => s.id === selectedStudentId)?.name}
+            Notas de {students.find(s => s.id === selectedStudentId)?.name} - {selectedUnit}ª Unidade
           </h3>
           <div className="border rounded-md">
             <Table>
@@ -149,7 +165,7 @@ export const StudentGradesManager = ({
                         placeholder="-"
                         className="text-right"
                         value={currentGrades[discipline.id] ?? ""}
-                        onChange={(e) => handleGradeInputChange(discipline.id, e.target.value)}
+                        onChange={(e) => setCurrentGrades(prev => ({ ...prev, [discipline.id]: e.target.value }))}
                       />
                     </TableCell>
                   </TableRow>
@@ -158,7 +174,7 @@ export const StudentGradesManager = ({
             </Table>
           </div>
           <div className="flex justify-end mt-4">
-            <Button onClick={handleSaveGrades}>Salvar Notas</Button>
+            <Button onClick={handleSaveGrades}>Salvar Notas da {selectedUnit}ª Unidade</Button>
           </div>
         </div>
       )}

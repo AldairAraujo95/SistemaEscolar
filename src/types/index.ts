@@ -36,4 +36,5 @@ export interface Grade {
   studentId: string;
   disciplineId: string;
   grade: number | null;
+  unit: number; // 1ª Unidade, 2ª Unidade, etc.
 }

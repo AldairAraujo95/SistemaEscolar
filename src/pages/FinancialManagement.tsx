@@ -24,16 +24,28 @@ import { boletos as initialBoletos } from "@/data/financial";
 import { guardians as initialGuardians } from "@/data/users";
 import type { Boleto, Guardian } from "@/types";
 import { showSuccess } from "@/utils/toast";
+import { useAuth } from "@/context/AuthContext";
+
+// Simula o responsável logado
+const LOGGED_IN_GUARDIAN_ID = "g1";
 
 const FinancialManagement = () => {
+  const { role } = useAuth();
   const [boletos, setBoletos] = useState<Boleto[]>(initialBoletos);
   const [guardians] = useState<Guardian[]>(initialGuardians);
   const [selectedGuardian, setSelectedGuardian] = useState<string>("all");
   const [selectedStatus, setSelectedStatus] = useState<Boleto['status'] | 'all'>('all');
   const [editingBoleto, setEditingBoleto] = useState<Boleto | null>(null);
 
+  const visibleBoletos = useMemo(() => {
+    if (role === 'aluno') {
+      return boletos.filter(b => b.guardianId === LOGGED_IN_GUARDIAN_ID);
+    }
+    return boletos;
+  }, [boletos, role]);
+
   const financialSummary = useMemo(() => {
-    return boletos.reduce(
+    return visibleBoletos.reduce(
       (acc, boleto) => {
         if (boleto.status === 'pago') {
           acc.paid.count += 1;
@@ -53,7 +65,7 @@ const FinancialManagement = () => {
         overdue: { count: 0, total: 0 },
       }
     );
-  }, [boletos]);
+  }, [visibleBoletos]);
 
   const chartData = [
     { name: 'Pago', value: financialSummary.paid.count },
@@ -66,15 +78,15 @@ const FinancialManagement = () => {
   };
 
   const filteredBoletos = useMemo(() => {
-    let filtered = boletos;
-    if (selectedGuardian !== "all") {
+    let filtered = visibleBoletos;
+    if (role !== 'aluno' && selectedGuardian !== "all") {
       filtered = filtered.filter((b) => b.guardianId === selectedGuardian);
     }
     if (selectedStatus !== "all") {
       filtered = filtered.filter((b) => b.status === selectedStatus);
     }
     return filtered;
-  }, [boletos, selectedGuardian, selectedStatus]);
+  }, [visibleBoletos, selectedGuardian, selectedStatus, role]);
 
   const handleUpdateBoleto = (updatedBoleto: Boleto) => {
     setBoletos(boletos.map(b => b.id === updatedBoleto.id ? updatedBoleto : b));
@@ -86,7 +98,11 @@ const FinancialManagement = () => {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold">Gestão Financeira</h1>
-        <p className="text-gray-500 mt-2">Gerencie e suba os boletos das mensalidades dos pais.</p>
+        <p className="text-gray-500 mt-2">
+          {role === 'aluno'
+            ? "Acompanhe os boletos de mensalidade."
+            : "Gerencie e suba os boletos das mensalidades dos pais."}
+        </p>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
@@ -130,22 +146,24 @@ const FinancialManagement = () => {
         </CardHeader>
         <CardContent>
           <div className="flex flex-col sm:flex-row gap-4 mb-4">
-            <div className="w-full sm:max-w-sm">
-              <Label htmlFor="guardian-filter">Filtrar por Responsável</Label>
-              <Select value={selectedGuardian} onValueChange={setSelectedGuardian}>
-                <SelectTrigger id="guardian-filter">
-                  <SelectValue placeholder="Selecione um responsável" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos os Responsáveis</SelectItem>
-                  {guardians.map((guardian) => (
-                    <SelectItem key={guardian.id} value={guardian.id}>
-                      {guardian.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {role !== 'aluno' && (
+              <div className="w-full sm:max-w-sm">
+                <Label htmlFor="guardian-filter">Filtrar por Responsável</Label>
+                <Select value={selectedGuardian} onValueChange={setSelectedGuardian}>
+                  <SelectTrigger id="guardian-filter">
+                    <SelectValue placeholder="Selecione um responsável" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos os Responsáveis</SelectItem>
+                    {guardians.map((guardian) => (
+                      <SelectItem key={guardian.id} value={guardian.id}>
+                        {guardian.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div className="w-full sm:max-w-xs">
               <Label htmlFor="status-filter">Filtrar por Status</Label>
               <Select value={selectedStatus} onValueChange={(value) => setSelectedStatus(value as Boleto['status'] | 'all')}>
@@ -170,7 +188,7 @@ const FinancialManagement = () => {
                   <TableHead>Vencimento</TableHead>
                   <TableHead>Valor</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Ações</TableHead>
+                  {role !== 'aluno' && <TableHead className="text-right">Ações</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -180,21 +198,23 @@ const FinancialManagement = () => {
                     <TableCell>{new Date(boleto.dueDate).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}</TableCell>
                     <TableCell>{boleto.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</TableCell>
                     <TableCell><StatusBadge status={boleto.status} /></TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => setEditingBoleto(boleto)}>
-                            <Edit className="mr-2 h-4 w-4" />
-                            Editar Status
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
+                    {role !== 'aluno' && (
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => setEditingBoleto(boleto)}>
+                              <Edit className="mr-2 h-4 w-4" />
+                              Editar Status
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))}
               </TableBody>

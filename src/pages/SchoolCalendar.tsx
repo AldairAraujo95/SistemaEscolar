@@ -12,8 +12,10 @@ import { DeleteConfirmationDialog } from "@/components/user-management/DeleteCon
 import { initialEvents } from "@/data/calendar";
 import type { CalendarEvent } from "@/types";
 import { showSuccess } from "@/utils/toast";
+import { useAuth } from "@/context/AuthContext";
 
 const SchoolCalendar = () => {
+  const { role } = useAuth();
   const [events, setEvents] = useState<CalendarEvent[]>(initialEvents);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -83,12 +85,18 @@ const SchoolCalendar = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Agenda Escolar</h1>
-          <p className="text-gray-500 mt-2">Crie, edite e visualize os eventos da escola.</p>
+          <p className="text-gray-500 mt-2">
+            {role === 'aluno'
+              ? "Visualize os eventos importantes da escola."
+              : "Crie, edite e visualize os eventos da escola."}
+          </p>
         </div>
-        <Button onClick={handleAddEvent}>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Adicionar Evento
-        </Button>
+        {role !== 'aluno' && (
+          <Button onClick={handleAddEvent}>
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Adicionar Evento
+          </Button>
+        )}
       </div>
 
       <div className="flex flex-col items-center gap-6">
@@ -138,14 +146,16 @@ const SchoolCalendar = () => {
                       </div>
                       <p className="text-sm text-muted-foreground">{event.description}</p>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <Button variant="ghost" size="icon" onClick={() => handleEditEvent(event)}>
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600" onClick={() => setDeletingEventId(event.id)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
+                    {role !== 'aluno' && (
+                      <div className="flex items-center gap-1">
+                        <Button variant="ghost" size="icon" onClick={() => handleEditEvent(event)}>
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600" onClick={() => setDeletingEventId(event.id)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 ))
               ) : (
@@ -158,23 +168,27 @@ const SchoolCalendar = () => {
         </Card>
       </div>
 
-      <EventDialog
-        event={editingEvent}
-        open={isDialogOpen}
-        onOpenChange={(open) => {
-          setIsDialogOpen(open);
-          if (!open) setEditingEvent(null);
-        }}
-        onSave={handleSaveEvent}
-      />
+      {role !== 'aluno' && (
+        <>
+          <EventDialog
+            event={editingEvent}
+            open={isDialogOpen}
+            onOpenChange={(open) => {
+              setIsDialogOpen(open);
+              if (!open) setEditingEvent(null);
+            }}
+            onSave={handleSaveEvent}
+          />
 
-      <DeleteConfirmationDialog
-        open={!!deletingEventId}
-        onOpenChange={(open) => !open && setDeletingEventId(null)}
-        onConfirm={confirmDeleteEvent}
-        title="Confirmar Exclusão"
-        description="Tem certeza que deseja excluir este evento? Esta ação não pode ser desfeita."
-      />
+          <DeleteConfirmationDialog
+            open={!!deletingEventId}
+            onOpenChange={(open) => !open && setDeletingEventId(null)}
+            onConfirm={confirmDeleteEvent}
+            title="Confirmar Exclusão"
+            description="Tem certeza que deseja excluir este evento? Esta ação não pode ser desfeita."
+          />
+        </>
+      )}
     </div>
   );
 };

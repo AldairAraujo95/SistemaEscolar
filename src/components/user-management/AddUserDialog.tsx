@@ -19,18 +19,22 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import type { Guardian, Class } from "@/types";
+import { MultiSelect } from "@/components/ui/multi-select";
+import type { Guardian, Class, Discipline } from "@/types";
 import { PlusCircle, X } from "lucide-react";
 
 interface AddUserDialogProps {
   guardians: Guardian[];
   classes: Class[];
+  disciplines: Discipline[];
   onAddUser: (type: string, data: any) => void;
 }
 
-export const AddUserDialog = ({ guardians, classes, onAddUser }: AddUserDialogProps) => {
+export const AddUserDialog = ({ guardians, classes, disciplines, onAddUser }: AddUserDialogProps) => {
   const [open, setOpen] = useState(false);
   const [newStudents, setNewStudents] = useState([{ name: "", class: "" }]);
+  const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
+  const [selectedClasses, setSelectedClasses] = useState<string[]>([]);
 
   const handleStudentChange = (index: number, field: 'name' | 'class', value: string) => {
     const updatedStudents = [...newStudents];
@@ -72,15 +76,20 @@ export const AddUserDialog = ({ guardians, classes, onAddUser }: AddUserDialogPr
       data = {
         name: formData.get("teacher-name"),
         email: formData.get("teacher-email"),
-        subjects: (formData.get("subjects") as string).split(",").map(s => s.trim()),
-        classes: (formData.get("classes") as string).split(",").map(s => s.trim()),
+        subjects: selectedSubjects,
+        classes: selectedClasses,
       };
     }
     
     onAddUser(activeTab as string, data);
     setOpen(false);
     setNewStudents([{ name: "", class: "" }]);
+    setSelectedSubjects([]);
+    setSelectedClasses([]);
   };
+
+  const disciplineOptions = disciplines.map(d => ({ value: d.name, label: d.name }));
+  const classOptions = classes.map(c => ({ value: c.name, label: c.name }));
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -213,13 +222,27 @@ export const AddUserDialog = ({ guardians, classes, onAddUser }: AddUserDialogPr
                   <Label htmlFor="teacher-email" className="text-right">Email</Label>
                   <Input id="teacher-email" name="teacher-email" type="email" placeholder="email@school.com" className="col-span-3" />
                 </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="subjects" className="text-right">Disciplinas</Label>
-                  <Input id="subjects" name="subjects" placeholder="Matemática, Português..." className="col-span-3" />
+                <div className="grid grid-cols-4 items-start gap-4">
+                  <Label htmlFor="subjects" className="text-right pt-2">Disciplinas</Label>
+                  <div className="col-span-3">
+                    <MultiSelect
+                      options={disciplineOptions}
+                      selected={selectedSubjects}
+                      onChange={setSelectedSubjects}
+                      placeholder="Selecione as disciplinas..."
+                    />
+                  </div>
                 </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="classes" className="text-right">Turmas</Label>
-                  <Input id="classes" name="classes" placeholder="5º A, 6º B, ..." className="col-span-3" />
+                <div className="grid grid-cols-4 items-start gap-4">
+                  <Label htmlFor="classes" className="text-right pt-2">Turmas</Label>
+                  <div className="col-span-3">
+                    <MultiSelect
+                      options={classOptions}
+                      selected={selectedClasses}
+                      onChange={setSelectedClasses}
+                      placeholder="Selecione as turmas..."
+                    />
+                  </div>
                 </div>
               </div>
             </TabsContent>

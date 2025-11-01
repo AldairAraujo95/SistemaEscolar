@@ -16,9 +16,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { MoreHorizontal, Edit } from "lucide-react";
+import { MoreHorizontal, Edit, TrendingUp, TrendingDown, CircleDollarSign } from "lucide-react";
 import { StatusBadge } from "@/components/financial-management/StatusBadge";
 import { EditBoletoDialog } from "@/components/financial-management/EditBoletoDialog";
+import { FinancialChart } from "@/components/financial-management/FinancialChart";
 import { boletos as initialBoletos } from "@/data/financial";
 import { guardians as initialGuardians } from "@/data/users";
 import type { Boleto, Guardian } from "@/types";
@@ -29,6 +30,35 @@ const FinancialManagement = () => {
   const [guardians] = useState<Guardian[]>(initialGuardians);
   const [selectedGuardian, setSelectedGuardian] = useState<string>("all");
   const [editingBoleto, setEditingBoleto] = useState<Boleto | null>(null);
+
+  const financialSummary = useMemo(() => {
+    return boletos.reduce(
+      (acc, boleto) => {
+        if (boleto.status === 'pago') {
+          acc.paid.count += 1;
+          acc.paid.total += boleto.amount;
+        } else if (boleto.status === 'a vencer') {
+          acc.pending.count += 1;
+          acc.pending.total += boleto.amount;
+        } else if (boleto.status === 'vencido') {
+          acc.overdue.count += 1;
+          acc.overdue.total += boleto.amount;
+        }
+        return acc;
+      },
+      {
+        paid: { count: 0, total: 0 },
+        pending: { count: 0, total: 0 },
+        overdue: { count: 0, total: 0 },
+      }
+    );
+  }, [boletos]);
+
+  const chartData = [
+    { name: 'Pago', value: financialSummary.paid.count },
+    { name: 'A Vencer', value: financialSummary.pending.count },
+    { name: 'Vencido', value: financialSummary.overdue.count },
+  ];
 
   const getGuardianName = (guardianId: string) => {
     return guardians.find((g) => g.id === guardianId)?.name || "N/A";
@@ -54,9 +84,43 @@ const FinancialManagement = () => {
         <p className="text-gray-500 mt-2">Gerencie e suba os boletos das mensalidades dos pais.</p>
       </div>
 
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Pago</CardTitle>
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{financialSummary.paid.total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</div>
+            <p className="text-xs text-muted-foreground">{financialSummary.paid.count} boletos</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">A Receber</CardTitle>
+            <CircleDollarSign className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{financialSummary.pending.total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</div>
+            <p className="text-xs text-muted-foreground">{financialSummary.pending.count} boletos</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Vencido</CardTitle>
+            <TrendingDown className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{financialSummary.overdue.total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</div>
+            <p className="text-xs text-muted-foreground">{financialSummary.overdue.count} boletos</p>
+          </CardContent>
+        </Card>
+        <FinancialChart data={chartData} />
+      </div>
+
       <Card>
         <CardHeader>
-          <CardTitle>Histórico Financeiro</CardTitle>
+          <CardTitle>Histórico Financeiro Detalhado</CardTitle>
           <CardDescription>Visualize e gerencie todos os boletos.</CardDescription>
         </CardHeader>
         <CardContent>

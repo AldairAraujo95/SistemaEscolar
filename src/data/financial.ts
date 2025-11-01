@@ -1,10 +1,29 @@
 import type { Boleto } from "@/types";
 
-export const boletos: Boleto[] = [
-  { id: "b1", guardianId: "g1", amount: 550.00, dueDate: "2024-08-10", status: "pago" },
-  { id: "b2", guardianId: "g1", amount: 550.00, dueDate: "2024-09-10", status: "a vencer" },
-  { id: "b3", guardianId: "g2", amount: 600.00, dueDate: "2024-07-10", status: "vencido" },
-  { id: "b4", guardianId: "g2", amount: 600.00, dueDate: "2024-08-10", status: "pago" },
-  { id: "b5", guardianId: "g1", amount: 550.00, dueDate: "2024-07-10", status: "pago" },
-  { id: "b6", guardianId: "g2", amount: 600.00, dueDate: "2024-09-10", status: "a vencer" },
-];
+const generateBoletos = (): Boleto[] => {
+  const boletos: Boleto[] = [];
+  const statuses: Boleto['status'][] = ['pago', 'a vencer', 'vencido'];
+  
+  for (let i = 1; i <= 50; i++) {
+    const guardianId = `g${i}`;
+    // Gerar 3 boletos por responsável
+    for (let j = 0; j < 3; j++) {
+      const month = 7 + j; // Julho, Agosto, Setembro
+      const status = statuses[(i + j) % 3];
+      let day = 10;
+      if (status === 'vencido') day = 5;
+      if (status === 'pago' && month === 8) day = 2;
+
+      boletos.push({
+        id: `b${boletos.length + 1}`,
+        guardianId: guardianId,
+        amount: 550.00 + (i % 5) * 25, // Variar um pouco o valor
+        dueDate: `2024-0${month}-${day}`,
+        status: status,
+      });
+    }
+  }
+  return boletos;
+};
+
+export const boletos: Boleto[] = generateBoletos();

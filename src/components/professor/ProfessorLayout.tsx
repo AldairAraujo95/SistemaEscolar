@@ -1,10 +1,10 @@
 import { Outlet } from "react-router-dom";
-import Sidebar from "@/components/Sidebar";
+import ProfessorSidebar from "@/components/professor/ProfessorSidebar";
 
-const Layout = () => {
+const ProfessorLayout = () => {
   return (
     <div className="flex min-h-screen bg-gray-50 dark:bg-background">
-      <Sidebar />
+      <ProfessorSidebar />
       <main className="flex-1 p-8">
         <Outlet />
       </main>
@@ -12,4 +12,4 @@ const Layout = () => {
   );
 };
 
-export default Layout;
+export default ProfessorLayout;

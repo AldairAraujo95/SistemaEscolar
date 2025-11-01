@@ -1,24 +1,14 @@
 import { NavLink } from "react-router-dom";
-import {
-  LayoutDashboard,
-  Users,
-  BookOpen,
-  DollarSign,
-  Calendar,
-  Activity,
-  School,
-} from "lucide-react";
+import { DollarSign, Calendar, Activity, School, ClipboardCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { MadeWithDyad } from "./made-with-dyad";
+import { MadeWithDyad } from "../made-with-dyad";
 
-const Sidebar = () => {
+const AlunoSidebar = () => {
   const navItems = [
-    { to: "/", icon: LayoutDashboard, label: "Dashboard" },
-    { to: "/users", icon: Users, label: "Gestão de Usuários" },
-    { to: "/academic", icon: BookOpen, label: "Gestão Acadêmica" },
-    { to: "/financial", icon: DollarSign, label: "Gestão Financeira" },
-    { to: "/calendar", icon: Calendar, label: "Agenda Escolar" },
-    { to: "/feed", icon: Activity, label: "Feed de Atividades" },
+    { to: "/aluno/financial", icon: DollarSign, label: "Financeiro" },
+    { to: "/aluno/feed", icon: Activity, label: "Feed de Atividades" },
+    { to: "/aluno/calendar", icon: Calendar, label: "Agenda Escolar" },
+    { to: "/aluno/grades", icon: ClipboardCheck, label: "Minhas Notas" },
   ];
 
   return (
@@ -26,7 +16,7 @@ const Sidebar = () => {
       <div className="p-4 border-b border-gray-200 dark:border-gray-800">
         <h1 className="text-2xl font-bold flex items-center gap-2">
           <School className="h-7 w-7" />
-          <span>Sys Scolar</span>
+          <span>Portal do Aluno</span>
         </h1>
       </div>
       <nav className="flex-1 p-4 space-y-2">
@@ -34,7 +24,6 @@ const Sidebar = () => {
           <NavLink
             key={item.to}
             to={item.to}
-            end={item.to === "/"}
             className={({ isActive }) =>
               cn(
                 "flex items-center gap-3 rounded-lg px-3 py-2 text-gray-500 transition-all hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-50",
@@ -54,4 +43,4 @@ const Sidebar = () => {
   );
 };
 
-export default Sidebar;
+export default AlunoSidebar;

@@ -9,15 +9,17 @@ import {
 } from "@/components/user-management/UserTables";
 import { AddUserDialog } from "@/components/user-management/AddUserDialog";
 import { DeleteConfirmationDialog } from "@/components/user-management/DeleteConfirmationDialog";
+import { EditTeacherDialog } from "@/components/user-management/EditTeacherDialog";
 import { students as initialStudents, guardians as initialGuardians, teachers as initialTeachers } from "@/data/users";
 import type { Student, Guardian, Teacher } from "@/types";
-import { showError, showSuccess } from "@/utils/toast";
+import { showSuccess } from "@/utils/toast";
 
 const UserManagement = () => {
   const [students, setStudents] = useState<Student[]>(initialStudents);
   const [guardians, setGuardians] = useState<Guardian[]>(initialGuardians);
   const [teachers, setTeachers] = useState<Teacher[]>(initialTeachers);
   const [deletingTeacherId, setDeletingTeacherId] = useState<string | null>(null);
+  const [editingTeacher, setEditingTeacher] = useState<Teacher | null>(null);
 
   const handleAddUser = (type: string, data: any) => {
     if (type === "student") {
@@ -30,6 +32,7 @@ const UserManagement = () => {
         id: uuidv4(),
         name: s.name,
         class: s.class,
+        cpf: '', // CPF should be added when creating student individually for now
         guardianId: newGuardianId,
       }));
       setGuardians([...guardians, newGuardian]);
@@ -42,10 +45,13 @@ const UserManagement = () => {
   };
 
   const handleEditTeacher = (teacher: Teacher) => {
-    // For simplicity, we'll just log this action.
-    // A full implementation would open an edit dialog.
-    console.log("Editing teacher:", teacher);
-    showError("A funcionalidade de edição ainda não foi implementada.");
+    setEditingTeacher(teacher);
+  };
+
+  const handleUpdateTeacher = (updatedTeacher: Teacher) => {
+    setTeachers(teachers.map(t => t.id === updatedTeacher.id ? updatedTeacher : t));
+    setEditingTeacher(null);
+    showSuccess("Professor atualizado com sucesso!");
   };
 
   const handleDeleteTeacher = (teacherId: string) => {
@@ -115,6 +121,13 @@ const UserManagement = () => {
           </Card>
         </TabsContent>
       </Tabs>
+
+      <EditTeacherDialog
+        teacher={editingTeacher}
+        open={!!editingTeacher}
+        onOpenChange={(open) => !open && setEditingTeacher(null)}
+        onSave={handleUpdateTeacher}
+      />
 
       <DeleteConfirmationDialog
         open={!!deletingTeacherId}

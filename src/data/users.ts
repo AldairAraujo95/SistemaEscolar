@@ -6,12 +6,12 @@ export const guardians: Guardian[] = [
 ];
 
 export const teachers: Teacher[] = [
-  { id: "t1", name: "Prof. Ricardo", email: "ricardo@school.com", subject: "Matemática", classes: ["5º Ano A", "6º Ano B"] },
-  { id: "t2", name: "Profa. Mariana", email: "mariana@school.com", subject: "Português", classes: ["5º Ano A", "3º Ano A"] },
+  { id: "t1", name: "Prof. Ricardo", email: "ricardo@school.com", subjects: ["Matemática", "Física"], classes: ["5º Ano A", "6º Ano B"] },
+  { id: "t2", name: "Profa. Mariana", email: "mariana@school.com", subjects: ["Português", "História"], classes: ["5º Ano A", "3º Ano A"] },
 ];
 
 export const students: Student[] = [
-  { id: "s1", name: "Lucas Silva", guardianId: "g1", class: "5º Ano A" },
-  { id: "s2", name: "Beatriz Souza", guardianId: "g2", class: "6º Ano B" },
-  { id: "s3", name: "Pedro Silva", guardianId: "g1", class: "3º Ano A" },
+  { id: "s1", name: "Lucas Silva", cpf: "111.222.333-44", guardianId: "g1", class: "5º Ano A" },
+  { id: "s2", name: "Beatriz Souza", cpf: "222.333.444-55", guardianId: "g2", class: "6º Ano B" },
+  { id: "s3", name: "Pedro Silva", cpf: "333.444.555-66", guardianId: "g1", class: "3º Ano A" },
 ];

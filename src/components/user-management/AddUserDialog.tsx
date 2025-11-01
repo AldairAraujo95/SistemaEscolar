@@ -55,6 +55,7 @@ export const AddUserDialog = ({ guardians, onAddUser }: AddUserDialogProps) => {
     if (activeTab === "student") {
       data = {
         name: formData.get("student-name"),
+        cpf: formData.get("student-cpf"),
         class: formData.get("class"),
         guardianId: formData.get("guardian"),
       };
@@ -69,7 +70,7 @@ export const AddUserDialog = ({ guardians, onAddUser }: AddUserDialogProps) => {
       data = {
         name: formData.get("teacher-name"),
         email: formData.get("teacher-email"),
-        subject: formData.get("subject"),
+        subjects: (formData.get("subjects") as string).split(",").map(s => s.trim()),
         classes: (formData.get("classes") as string).split(",").map(s => s.trim()),
       };
     }
@@ -104,6 +105,10 @@ export const AddUserDialog = ({ guardians, onAddUser }: AddUserDialogProps) => {
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="student-name" className="text-right">Nome</Label>
                   <Input id="student-name" name="student-name" placeholder="Nome do Aluno" className="col-span-3" />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="student-cpf" className="text-right">CPF</Label>
+                  <Input id="student-cpf" name="student-cpf" placeholder="000.000.000-00" className="col-span-3" />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="class" className="text-right">Turma</Label>
@@ -170,8 +175,8 @@ export const AddUserDialog = ({ guardians, onAddUser }: AddUserDialogProps) => {
                   <Input id="teacher-email" name="teacher-email" type="email" placeholder="email@school.com" className="col-span-3" />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="subject" className="text-right">Disciplina</Label>
-                  <Input id="subject" name="subject" placeholder="Ex: Matemática" className="col-span-3" />
+                  <Label htmlFor="subjects" className="text-right">Disciplinas</Label>
+                  <Input id="subjects" name="subjects" placeholder="Matemática, Português..." className="col-span-3" />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="classes" className="text-right">Turmas</Label>

@@ -31,6 +31,7 @@ export const StudentsTable = ({ students, guardians }: StudentsTableProps) => {
       <TableHeader>
         <TableRow>
           <TableHead>Nome do Aluno</TableHead>
+          <TableHead>CPF</TableHead>
           <TableHead>Responsável</TableHead>
           <TableHead>Turma</TableHead>
           <TableHead className="text-right">Ações</TableHead>
@@ -40,6 +41,7 @@ export const StudentsTable = ({ students, guardians }: StudentsTableProps) => {
         {students.map((student) => (
           <TableRow key={student.id}>
             <TableCell className="font-medium">{student.name}</TableCell>
+            <TableCell>{student.cpf}</TableCell>
             <TableCell>{getGuardianName(student.guardianId)}</TableCell>
             <TableCell>{student.class}</TableCell>
             <TableCell className="text-right">
@@ -97,7 +99,7 @@ export const TeachersTable = ({ teachers, onEdit, onDelete }: TeachersTableProps
       <TableRow>
         <TableHead>Nome do Professor</TableHead>
         <TableHead>Email</TableHead>
-        <TableHead>Disciplina</TableHead>
+        <TableHead>Disciplinas</TableHead>
         <TableHead>Turmas</TableHead>
         <TableHead className="text-right">Ações</TableHead>
       </TableRow>
@@ -107,7 +109,7 @@ export const TeachersTable = ({ teachers, onEdit, onDelete }: TeachersTableProps
         <TableRow key={teacher.id}>
           <TableCell className="font-medium">{teacher.name}</TableCell>
           <TableCell>{teacher.email}</TableCell>
-          <TableCell>{teacher.subject}</TableCell>
+          <TableCell>{teacher.subjects.join(", ")}</TableCell>
           <TableCell>{teacher.classes.join(", ")}</TableCell>
           <TableCell className="text-right">
             <DropdownMenu>

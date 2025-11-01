@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { v4 as uuidv4 } from "uuid";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import {
@@ -7,12 +8,57 @@ import {
   TeachersTable,
 } from "@/components/user-management/UserTables";
 import { AddUserDialog } from "@/components/user-management/AddUserDialog";
+import { DeleteConfirmationDialog } from "@/components/user-management/DeleteConfirmationDialog";
 import { students as initialStudents, guardians as initialGuardians, teachers as initialTeachers } from "@/data/users";
+import type { Student, Guardian, Teacher } from "@/types";
+import { showError, showSuccess } from "@/utils/toast";
 
 const UserManagement = () => {
-  const [students, setStudents] = useState(initialStudents);
-  const [guardians, setGuardians] = useState(initialGuardians);
-  const [teachers, setTeachers] = useState(initialTeachers);
+  const [students, setStudents] = useState<Student[]>(initialStudents);
+  const [guardians, setGuardians] = useState<Guardian[]>(initialGuardians);
+  const [teachers, setTeachers] = useState<Teacher[]>(initialTeachers);
+  const [deletingTeacherId, setDeletingTeacherId] = useState<string | null>(null);
+
+  const handleAddUser = (type: string, data: any) => {
+    if (type === "student") {
+      const newStudent: Student = { id: uuidv4(), ...data };
+      setStudents([...students, newStudent]);
+    } else if (type === "guardian") {
+      const newGuardianId = uuidv4();
+      const newGuardian: Guardian = { id: newGuardianId, name: data.name, email: data.email, phone: data.phone };
+      const newStudents: Student[] = data.students.map((s: any) => ({
+        id: uuidv4(),
+        name: s.name,
+        class: s.class,
+        guardianId: newGuardianId,
+      }));
+      setGuardians([...guardians, newGuardian]);
+      setStudents([...students, ...newStudents]);
+    } else if (type === "teacher") {
+      const newTeacher: Teacher = { id: uuidv4(), ...data };
+      setTeachers([...teachers, newTeacher]);
+    }
+    showSuccess("Usuário adicionado com sucesso!");
+  };
+
+  const handleEditTeacher = (teacher: Teacher) => {
+    // For simplicity, we'll just log this action.
+    // A full implementation would open an edit dialog.
+    console.log("Editing teacher:", teacher);
+    showError("A funcionalidade de edição ainda não foi implementada.");
+  };
+
+  const handleDeleteTeacher = (teacherId: string) => {
+    setDeletingTeacherId(teacherId);
+  };
+
+  const confirmDeleteTeacher = () => {
+    if (deletingTeacherId) {
+      setTeachers(teachers.filter((t) => t.id !== deletingTeacherId));
+      setDeletingTeacherId(null);
+      showSuccess("Professor excluído com sucesso!");
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -23,7 +69,7 @@ const UserManagement = () => {
             Crie e gerencie alunos, responsáveis e professores.
           </p>
         </div>
-        <AddUserDialog guardians={guardians} />
+        <AddUserDialog guardians={guardians} onAddUser={handleAddUser} />
       </div>
 
       <Tabs defaultValue="students">
@@ -64,11 +110,19 @@ const UserManagement = () => {
               <CardDescription>Lista de todos os professores cadastrados.</CardDescription>
             </CardHeader>
             <CardContent>
-              <TeachersTable teachers={teachers} />
+              <TeachersTable teachers={teachers} onEdit={handleEditTeacher} onDelete={handleDeleteTeacher} />
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
+
+      <DeleteConfirmationDialog
+        open={!!deletingTeacherId}
+        onOpenChange={(open) => !open && setDeletingTeacherId(null)}
+        onConfirm={confirmDeleteTeacher}
+        title="Confirmar Exclusão"
+        description="Tem certeza que deseja excluir este professor? Esta ação não pode ser desfeita."
+      />
     </div>
   );
 };

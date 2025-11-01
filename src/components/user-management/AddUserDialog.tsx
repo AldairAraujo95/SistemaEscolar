@@ -20,19 +20,63 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Guardian } from "@/types";
+import { PlusCircle, X } from "lucide-react";
 
 interface AddUserDialogProps {
   guardians: Guardian[];
+  onAddUser: (type: string, data: any) => void;
 }
 
-export const AddUserDialog = ({ guardians }: AddUserDialogProps) => {
+export const AddUserDialog = ({ guardians, onAddUser }: AddUserDialogProps) => {
   const [open, setOpen] = useState(false);
+  const [newStudents, setNewStudents] = useState([{ name: "", class: "" }]);
+
+  const handleStudentChange = (index: number, field: 'name' | 'class', value: string) => {
+    const updatedStudents = [...newStudents];
+    updatedStudents[index][field] = value;
+    setNewStudents(updatedStudents);
+  };
+
+  const addStudentField = () => {
+    setNewStudents([...newStudents, { name: "", class: "" }]);
+  };
+
+  const removeStudentField = (index: number) => {
+    const updatedStudents = newStudents.filter((_, i) => i !== index);
+    setNewStudents(updatedStudents);
+  };
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    // Here you would handle form submission
-    console.log("Form submitted");
-    setOpen(false); // Close dialog on submit
+    const formData = new FormData(event.currentTarget);
+    const activeTab = formData.get("activeTab");
+
+    let data = {};
+    if (activeTab === "student") {
+      data = {
+        name: formData.get("student-name"),
+        class: formData.get("class"),
+        guardianId: formData.get("guardian"),
+      };
+    } else if (activeTab === "guardian") {
+      data = {
+        name: formData.get("guardian-name"),
+        email: formData.get("guardian-email"),
+        phone: formData.get("guardian-phone"),
+        students: newStudents.filter(s => s.name && s.class),
+      };
+    } else if (activeTab === "teacher") {
+      data = {
+        name: formData.get("teacher-name"),
+        email: formData.get("teacher-email"),
+        subject: formData.get("subject"),
+        classes: (formData.get("classes") as string).split(",").map(s => s.trim()),
+      };
+    }
+    
+    onAddUser(activeTab as string, data);
+    setOpen(false);
+    setNewStudents([{ name: "", class: "" }]);
   };
 
   return (
@@ -47,26 +91,27 @@ export const AddUserDialog = ({ guardians }: AddUserDialogProps) => {
             Preencha os detalhes abaixo para criar um novo usuário.
           </DialogDescription>
         </DialogHeader>
-        <Tabs defaultValue="student">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="student">Aluno</TabsTrigger>
-            <TabsTrigger value="guardian">Responsável</TabsTrigger>
-            <TabsTrigger value="teacher">Professor</TabsTrigger>
-          </TabsList>
-          <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit}>
+          <Tabs defaultValue="student">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="student">Aluno</TabsTrigger>
+              <TabsTrigger value="guardian">Responsável</TabsTrigger>
+              <TabsTrigger value="teacher">Professor</TabsTrigger>
+            </TabsList>
             <TabsContent value="student">
+              <input type="hidden" name="activeTab" value="student" />
               <div className="grid gap-4 py-4">
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="student-name" className="text-right">Nome</Label>
-                  <Input id="student-name" placeholder="Nome do Aluno" className="col-span-3" />
+                  <Input id="student-name" name="student-name" placeholder="Nome do Aluno" className="col-span-3" />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="class" className="text-right">Turma</Label>
-                  <Input id="class" placeholder="Ex: 5º Ano A" className="col-span-3" />
+                  <Input id="class" name="class" placeholder="Ex: 5º Ano A" className="col-span-3" />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="guardian" className="text-right">Responsável</Label>
-                  <Select>
+                  <Select name="guardian">
                     <SelectTrigger className="col-span-3">
                       <SelectValue placeholder="Selecione um responsável" />
                     </SelectTrigger>
@@ -82,42 +127,63 @@ export const AddUserDialog = ({ guardians }: AddUserDialogProps) => {
               </div>
             </TabsContent>
             <TabsContent value="guardian">
+              <input type="hidden" name="activeTab" value="guardian" />
               <div className="grid gap-4 py-4">
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="guardian-name" className="text-right">Nome</Label>
-                  <Input id="guardian-name" placeholder="Nome do Responsável" className="col-span-3" />
+                  <Input id="guardian-name" name="guardian-name" placeholder="Nome do Responsável" className="col-span-3" />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="guardian-email" className="text-right">Email</Label>
-                  <Input id="guardian-email" type="email" placeholder="email@example.com" className="col-span-3" />
+                  <Input id="guardian-email" name="guardian-email" type="email" placeholder="email@example.com" className="col-span-3" />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="guardian-phone" className="text-right">Telefone</Label>
-                  <Input id="guardian-phone" placeholder="(00) 90000-0000" className="col-span-3" />
+                  <Input id="guardian-phone" name="guardian-phone" placeholder="(00) 90000-0000" className="col-span-3" />
+                </div>
+                <div className="col-span-4 space-y-2 mt-4">
+                  <Label>Alunos Vinculados</Label>
+                  {newStudents.map((student, index) => (
+                    <div key={index} className="flex items-center gap-2">
+                      <Input placeholder="Nome do Aluno" value={student.name} onChange={(e) => handleStudentChange(index, 'name', e.target.value)} />
+                      <Input placeholder="Turma" value={student.class} onChange={(e) => handleStudentChange(index, 'class', e.target.value)} />
+                      <Button type="button" variant="ghost" size="icon" onClick={() => removeStudentField(index)}>
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                  <Button type="button" variant="outline" size="sm" className="mt-2" onClick={addStudentField}>
+                    <PlusCircle className="mr-2 h-4 w-4" /> Adicionar Aluno
+                  </Button>
                 </div>
               </div>
             </TabsContent>
             <TabsContent value="teacher">
+              <input type="hidden" name="activeTab" value="teacher" />
               <div className="grid gap-4 py-4">
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="teacher-name" className="text-right">Nome</Label>
-                  <Input id="teacher-name" placeholder="Nome do Professor" className="col-span-3" />
+                  <Input id="teacher-name" name="teacher-name" placeholder="Nome do Professor" className="col-span-3" />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="teacher-email" className="text-right">Email</Label>
-                  <Input id="teacher-email" type="email" placeholder="email@school.com" className="col-span-3" />
+                  <Input id="teacher-email" name="teacher-email" type="email" placeholder="email@school.com" className="col-span-3" />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="subject" className="text-right">Disciplina</Label>
-                  <Input id="subject" placeholder="Ex: Matemática" className="col-span-3" />
+                  <Input id="subject" name="subject" placeholder="Ex: Matemática" className="col-span-3" />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="classes" className="text-right">Turmas</Label>
+                  <Input id="classes" name="classes" placeholder="5º A, 6º B, ..." className="col-span-3" />
                 </div>
               </div>
             </TabsContent>
             <DialogFooter>
               <Button type="submit">Salvar</Button>
             </DialogFooter>
-          </form>
-        </Tabs>
+          </Tabs>
+        </form>
       </DialogContent>
     </Dialog>
   );

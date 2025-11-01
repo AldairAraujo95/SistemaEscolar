@@ -6,8 +6,8 @@ export const guardians: Guardian[] = [
 ];
 
 export const teachers: Teacher[] = [
-  { id: "t1", name: "Prof. Ricardo", email: "ricardo@school.com", subject: "Matemática" },
-  { id: "t2", name: "Profa. Mariana", email: "mariana@school.com", subject: "Português" },
+  { id: "t1", name: "Prof. Ricardo", email: "ricardo@school.com", subject: "Matemática", classes: ["5º Ano A", "6º Ano B"] },
+  { id: "t2", name: "Profa. Mariana", email: "mariana@school.com", subject: "Português", classes: ["5º Ano A", "3º Ano A"] },
 ];
 
 export const students: Student[] = [

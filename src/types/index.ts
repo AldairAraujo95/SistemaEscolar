@@ -10,6 +10,7 @@ export interface Teacher {
   name: string;
   email: string;
   subject: string;
+  classes: string[];
 }
 
 export interface Student {

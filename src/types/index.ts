@@ -47,3 +47,11 @@ export interface Boleto {
   dueDate: string; // Formato YYYY-MM-DD
   status: 'pago' | 'a vencer' | 'vencido';
 }
+
+export interface CalendarEvent {
+  id: string;
+  title: string;
+  date: Date;
+  description: string;
+  type: 'event' | 'holiday' | 'exam' | 'reminder';
+}

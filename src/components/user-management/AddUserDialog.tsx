@@ -64,6 +64,7 @@ export const AddUserDialog = ({ guardians, onAddUser }: AddUserDialogProps) => {
         name: formData.get("guardian-name"),
         email: formData.get("guardian-email"),
         phone: formData.get("guardian-phone"),
+        dueDateDay: formData.get("due-date-day"),
         students: newStudents.filter(s => s.name && s.class),
       };
     } else if (activeTab === "teacher") {
@@ -145,6 +146,21 @@ export const AddUserDialog = ({ guardians, onAddUser }: AddUserDialogProps) => {
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="guardian-phone" className="text-right">Telefone</Label>
                   <Input id="guardian-phone" name="guardian-phone" placeholder="(00) 90000-0000" className="col-span-3" />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="due-date-day" className="text-right">Vencimento</Label>
+                  <Select name="due-date-day" defaultValue="10">
+                    <SelectTrigger className="col-span-3">
+                      <SelectValue placeholder="Dia do vencimento" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.from({ length: 28 }, (_, i) => i + 1).map(day => (
+                        <SelectItem key={day} value={String(day)}>
+                          Dia {day}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="col-span-4 space-y-2 mt-4">
                   <Label>Alunos Vinculados</Label>

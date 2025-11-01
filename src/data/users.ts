@@ -1,16 +1,16 @@
 import type { Guardian, Teacher, Student } from "@/types";
 
 export const guardians: Guardian[] = [
-  { id: "g1", name: "Ana Silva", email: "ana.silva@example.com", phone: "(11) 98765-4321" },
-  { id: "g2", name: "Carlos Souza", email: "carlos.souza@example.com", phone: "(21) 91234-5678" },
-  { id: "g3", name: "Beatriz Lima", email: "beatriz.lima@example.com", phone: "(31) 98888-1111" },
-  { id: "g4", name: "Daniel Alves", email: "daniel.alves@example.com", phone: "(41) 97777-2222" },
-  { id: "g5", name: "Eduarda Costa", email: "eduarda.costa@example.com", phone: "(51) 96666-3333" },
-  { id: "g6", name: "Felipe Pereira", email: "felipe.pereira@example.com", phone: "(61) 95555-4444" },
-  { id: "g7", name: "Gabriela Martins", email: "gabriela.martins@example.com", phone: "(71) 94444-5555" },
-  { id: "g8", name: "Heitor Santos", email: "heitor.santos@example.com", phone: "(81) 93333-6666" },
-  { id: "g9", name: "Isabela Rocha", email: "isabela.rocha@example.com", phone: "(91) 92222-7777" },
-  { id: "g10", name: "João Oliveira", email: "joao.oliveira@example.com", phone: "(12) 91111-8888" },
+  { id: "g1", name: "Ana Silva", email: "ana.silva@example.com", phone: "(11) 98765-4321", dueDateDay: 10 },
+  { id: "g2", name: "Carlos Souza", email: "carlos.souza@example.com", phone: "(21) 91234-5678", dueDateDay: 15 },
+  { id: "g3", name: "Beatriz Lima", email: "beatriz.lima@example.com", phone: "(31) 98888-1111", dueDateDay: 5 },
+  { id: "g4", name: "Daniel Alves", email: "daniel.alves@example.com", phone: "(41) 97777-2222", dueDateDay: 10 },
+  { id: "g5", name: "Eduarda Costa", email: "eduarda.costa@example.com", phone: "(51) 96666-3333", dueDateDay: 20 },
+  { id: "g6", name: "Felipe Pereira", email: "felipe.pereira@example.com", phone: "(61) 95555-4444", dueDateDay: 10 },
+  { id: "g7", name: "Gabriela Martins", email: "gabriela.martins@example.com", phone: "(71) 94444-5555", dueDateDay: 12 },
+  { id: "g8", name: "Heitor Santos", email: "heitor.santos@example.com", phone: "(81) 93333-6666", dueDateDay: 10 },
+  { id: "g9", name: "Isabela Rocha", email: "isabela.rocha@example.com", phone: "(91) 92222-7777", dueDateDay: 18 },
+  { id: "g10", name: "João Oliveira", email: "joao.oliveira@example.com", phone: "(12) 91111-8888", dueDateDay: 5 },
   ...Array.from({ length: 40 }, (_, i) => {
     const id = i + 11;
     const firstNames = ["Lucas", "Mariana", "Pedro", "Juliana", "Rafael", "Camila", "Gustavo", "Larissa"];
@@ -20,7 +20,8 @@ export const guardians: Guardian[] = [
       id: `g${id}`,
       name: name,
       email: `${name.toLowerCase().replace(" ", ".")}@example.com`,
-      phone: `(11) 9${String(Math.floor(Math.random() * 9000) + 1000)}-${String(Math.floor(Math.random() * 9000) + 1000)}`
+      phone: `(11) 9${String(Math.floor(Math.random() * 9000) + 1000)}-${String(Math.floor(Math.random() * 9000) + 1000)}`,
+      dueDateDay: [5, 10, 15, 20][i % 4]
     };
   })
 ];

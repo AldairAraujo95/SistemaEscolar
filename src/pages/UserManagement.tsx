@@ -27,7 +27,13 @@ const UserManagement = () => {
       setStudents([...students, newStudent]);
     } else if (type === "guardian") {
       const newGuardianId = uuidv4();
-      const newGuardian: Guardian = { id: newGuardianId, name: data.name, email: data.email, phone: data.phone };
+      const newGuardian: Guardian = {
+        id: newGuardianId,
+        name: data.name,
+        email: data.email,
+        phone: data.phone,
+        dueDateDay: parseInt(data.dueDateDay, 10) || 10,
+      };
       const newStudents: Student[] = data.students.map((s: any) => ({
         id: uuidv4(),
         name: s.name,

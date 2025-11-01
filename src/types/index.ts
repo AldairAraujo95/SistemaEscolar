@@ -3,6 +3,7 @@ export interface Guardian {
   name: string;
   email: string;
   phone: string;
+  dueDateDay: number; // Dia do mês para vencimento do boleto
 }
 
 export interface Teacher {

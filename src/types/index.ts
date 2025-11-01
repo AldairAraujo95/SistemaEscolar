@@ -30,3 +30,10 @@ export interface Class {
   id: string;
   name: string;
 }
+
+export interface Grade {
+  id: string;
+  studentId: string;
+  disciplineId: string;
+  grade: number | null;
+}

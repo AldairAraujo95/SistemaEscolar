@@ -16,13 +16,18 @@ import { AddClassDialog } from "@/components/academic-management/AddClassDialog"
 import { EditDisciplineDialog } from "@/components/academic-management/EditDisciplineDialog";
 import { EditClassDialog } from "@/components/academic-management/EditClassDialog";
 import { DeleteConfirmationDialog } from "@/components/user-management/DeleteConfirmationDialog";
+import { StudentGradesManager } from "@/components/academic-management/StudentGradesManager";
 import { disciplines as initialDisciplines, classes as initialClasses } from "@/data/academic";
-import type { Discipline, Class } from "@/types";
+import { students as initialStudents } from "@/data/users";
+import { grades as initialGrades } from "@/data/grades";
+import type { Discipline, Class, Student, Grade } from "@/types";
 import { showSuccess } from "@/utils/toast";
 
 const AcademicManagement = () => {
   const [disciplines, setDisciplines] = useState<Discipline[]>(initialDisciplines);
   const [classes, setClasses] = useState<Class[]>(initialClasses);
+  const [students, setStudents] = useState<Student[]>(initialStudents);
+  const [grades, setGrades] = useState<Grade[]>(initialGrades);
 
   const [editingDiscipline, setEditingDiscipline] = useState<Discipline | null>(null);
   const [deletingDisciplineId, setDeletingDisciplineId] = useState<string | null>(null);
@@ -71,17 +76,24 @@ const AcademicManagement = () => {
     }
   };
 
+  // Grade Handler
+  const handleGradesChange = (newGrades: Grade[]) => {
+    setGrades(newGrades);
+    showSuccess("Notas salvas com sucesso!");
+  };
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold">Gestão Acadêmica</h1>
-        <p className="text-gray-500 mt-2">Crie e gerencie turmas e disciplinas.</p>
+        <p className="text-gray-500 mt-2">Crie e gerencie turmas, disciplinas e notas dos alunos.</p>
       </div>
 
       <Tabs defaultValue="classes">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="classes">Turmas</TabsTrigger>
           <TabsTrigger value="disciplines">Disciplinas</TabsTrigger>
+          <TabsTrigger value="grades">Notas dos Alunos</TabsTrigger>
         </TabsList>
 
         <TabsContent value="classes">
@@ -176,6 +188,24 @@ const AcademicManagement = () => {
                   ))}
                 </TableBody>
               </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="grades">
+          <Card>
+            <CardHeader>
+              <CardTitle>Notas dos Alunos</CardTitle>
+              <CardDescription>Selecione uma turma e um aluno para lançar as notas.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <StudentGradesManager
+                students={students}
+                classes={classes}
+                disciplines={disciplines}
+                grades={grades}
+                onGradesChange={handleGradesChange}
+              />
             </CardContent>
           </Card>
         </TabsContent>

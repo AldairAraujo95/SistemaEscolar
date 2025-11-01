@@ -19,15 +19,16 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import type { Guardian } from "@/types";
+import type { Guardian, Class } from "@/types";
 import { PlusCircle, X } from "lucide-react";
 
 interface AddUserDialogProps {
   guardians: Guardian[];
+  classes: Class[];
   onAddUser: (type: string, data: any) => void;
 }
 
-export const AddUserDialog = ({ guardians, onAddUser }: AddUserDialogProps) => {
+export const AddUserDialog = ({ guardians, classes, onAddUser }: AddUserDialogProps) => {
   const [open, setOpen] = useState(false);
   const [newStudents, setNewStudents] = useState([{ name: "", class: "" }]);
 
@@ -113,7 +114,18 @@ export const AddUserDialog = ({ guardians, onAddUser }: AddUserDialogProps) => {
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="class" className="text-right">Turma</Label>
-                  <Input id="class" name="class" placeholder="Ex: 5º Ano A" className="col-span-3" />
+                  <Select name="class">
+                    <SelectTrigger className="col-span-3">
+                      <SelectValue placeholder="Selecione uma turma" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {classes.map((c) => (
+                        <SelectItem key={c.id} value={c.name}>
+                          {c.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="guardian" className="text-right">Responsável</Label>
@@ -167,7 +179,18 @@ export const AddUserDialog = ({ guardians, onAddUser }: AddUserDialogProps) => {
                   {newStudents.map((student, index) => (
                     <div key={index} className="flex items-center gap-2">
                       <Input placeholder="Nome do Aluno" value={student.name} onChange={(e) => handleStudentChange(index, 'name', e.target.value)} />
-                      <Input placeholder="Turma" value={student.class} onChange={(e) => handleStudentChange(index, 'class', e.target.value)} />
+                      <Select value={student.class} onValueChange={(value) => handleStudentChange(index, 'class', value)}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione a Turma" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {classes.map((c) => (
+                            <SelectItem key={c.id} value={c.name}>
+                              {c.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       <Button type="button" variant="ghost" size="icon" onClick={() => removeStudentField(index)}>
                         <X className="h-4 w-4" />
                       </Button>

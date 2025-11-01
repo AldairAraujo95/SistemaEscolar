@@ -11,13 +11,15 @@ import { AddUserDialog } from "@/components/user-management/AddUserDialog";
 import { DeleteConfirmationDialog } from "@/components/user-management/DeleteConfirmationDialog";
 import { EditTeacherDialog } from "@/components/user-management/EditTeacherDialog";
 import { students as initialStudents, guardians as initialGuardians, teachers as initialTeachers } from "@/data/users";
-import type { Student, Guardian, Teacher } from "@/types";
+import { classes as initialClasses } from "@/data/academic";
+import type { Student, Guardian, Teacher, Class } from "@/types";
 import { showSuccess } from "@/utils/toast";
 
 const UserManagement = () => {
   const [students, setStudents] = useState<Student[]>(initialStudents);
   const [guardians, setGuardians] = useState<Guardian[]>(initialGuardians);
   const [teachers, setTeachers] = useState<Teacher[]>(initialTeachers);
+  const [classes] = useState<Class[]>(initialClasses);
   const [deletingTeacherId, setDeletingTeacherId] = useState<string | null>(null);
   const [editingTeacher, setEditingTeacher] = useState<Teacher | null>(null);
 
@@ -81,7 +83,7 @@ const UserManagement = () => {
             Crie e gerencie alunos, responsáveis e professores.
           </p>
         </div>
-        <AddUserDialog guardians={guardians} onAddUser={handleAddUser} />
+        <AddUserDialog guardians={guardians} classes={classes} onAddUser={handleAddUser} />
       </div>
 
       <Tabs defaultValue="students">

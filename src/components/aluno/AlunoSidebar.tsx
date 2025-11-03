@@ -18,7 +18,7 @@ const AlunoSidebar = () => {
 
   const handleLogout = async () => {
     await logout();
-    navigate('/');
+    // Navigation is now handled by ProtectedRoute
   };
 
   return (

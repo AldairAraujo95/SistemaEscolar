@@ -12,9 +12,8 @@ const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
   const isAuthenticated = !!session || role === 'admin';
 
   if (!isAuthenticated) {
-    // Redirect to login, but preserve the role selection if possible
-    const roleParam = role ? `?role=${role}` : '';
-    return <Navigate to={`/login${roleParam}`} replace />;
+    // Redirect to the main role selection page if not authenticated
+    return <Navigate to="/" replace />;
   }
 
   // If authenticated, check if the role is allowed for this route

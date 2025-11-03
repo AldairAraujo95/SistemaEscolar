@@ -17,9 +17,6 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const SUPABASE_PROJECT_REF = "iymefizdnhhvulttjjrz";
-const AUTH_TOKEN_KEY = `sb-${SUPABASE_PROJECT_REF}-auth-token`;
-
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
@@ -37,8 +34,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   useEffect(() => {
-    setLoading(true);
-
     const fetchProfile = async (userId: string, currentRole: Role) => {
       if (!currentRole || currentRole === 'admin') {
         setProfile(null);
@@ -55,6 +50,34 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     };
 
+    // Check user session on initial load
+    const checkUser = async () => {
+      setLoading(true);
+      const currentRole = localStorage.getItem('userRole') as Role;
+
+      if (currentRole === 'admin') {
+        setSession(null);
+        setUser(null);
+        setProfile(null);
+        setLoading(false);
+        return;
+      }
+
+      const { data: { session } } = await supabase.auth.getSession();
+      setSession(session);
+      setUser(session?.user ?? null);
+
+      if (session?.user && currentRole) {
+        await fetchProfile(session.user.id, currentRole);
+      } else {
+        setProfile(null);
+      }
+      setLoading(false);
+    };
+
+    checkUser();
+
+    // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
         setSession(session);
@@ -63,12 +86,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
         if (session?.user && currentRole) {
           await fetchProfile(session.user.id, currentRole);
-        } else if (_event === 'SIGNED_OUT') {
+        } else {
           setProfile(null);
-          handleSetRole(null);
         }
         
-        setLoading(false);
+        if (_event === 'SIGNED_OUT') {
+          handleSetRole(null);
+        }
       }
     );
 
@@ -79,7 +103,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const logout = async () => {
     await supabase.auth.signOut();
-    localStorage.removeItem(AUTH_TOKEN_KEY);
     localStorage.removeItem('userRole');
     setSession(null);
     setUser(null);

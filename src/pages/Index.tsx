@@ -30,15 +30,23 @@ const Dashboard = () => {
   }, []);
 
   useEffect(() => {
+    // Fetch initial data
     fetchBoletos();
 
+    // Set up a real-time subscription to the 'boletos' table
     const channel = supabase
-      .channel('public:boletos')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'boletos' }, () => {
-        fetchBoletos();
-      })
+      .channel('dashboard-boletos-realtime-channel') // Using a unique and descriptive channel name
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'boletos' },
+        () => {
+          // When any change occurs, refetch the data to update the dashboard
+          fetchBoletos();
+        }
+      )
       .subscribe();
 
+    // Clean up the subscription when the component unmounts
     return () => {
       supabase.removeChannel(channel);
     };

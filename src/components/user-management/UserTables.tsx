@@ -7,7 +7,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, Edit, Trash2 } from "lucide-react";
+import { MoreHorizontal, Edit, Trash2, KeyRound } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -77,9 +77,10 @@ interface GuardiansTableProps {
   guardians: Guardian[];
   onEdit: (guardian: Guardian) => void;
   onDelete: (guardianId: string) => void;
+  onChangePassword: (guardian: Guardian) => void;
 }
 
-export const GuardiansTable = ({ guardians, onEdit, onDelete }: GuardiansTableProps) => (
+export const GuardiansTable = ({ guardians, onEdit, onDelete, onChangePassword }: GuardiansTableProps) => (
   <Table>
     <TableHeader>
       <TableRow>
@@ -105,7 +106,11 @@ export const GuardiansTable = ({ guardians, onEdit, onDelete }: GuardiansTablePr
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={() => onEdit(guardian)}>
                   <Edit className="mr-2 h-4 w-4" />
-                  Editar
+                  Editar Dados
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onChangePassword(guardian)}>
+                  <KeyRound className="mr-2 h-4 w-4" />
+                  Alterar Senha
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => onDelete(guardian.id)} className="text-red-600">
                   <Trash2 className="mr-2 h-4 w-4" />

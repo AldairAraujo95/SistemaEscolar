@@ -11,6 +11,7 @@ import { DeleteConfirmationDialog } from "@/components/user-management/DeleteCon
 import { EditTeacherDialog } from "@/components/user-management/EditTeacherDialog";
 import { EditStudentDialog } from "@/components/user-management/EditStudentDialog";
 import { EditGuardianDialog } from "@/components/user-management/EditGuardianDialog";
+import { EditGuardianPasswordDialog } from "@/components/user-management/EditGuardianPasswordDialog";
 import type { Student, Guardian, Teacher, Class, Discipline } from "@/types";
 import { showSuccess, showError } from "@/utils/toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -64,6 +65,7 @@ const UserManagement = () => {
   // Guardian state
   const [editingGuardian, setEditingGuardian] = useState<Guardian | null>(null);
   const [deletingGuardianId, setDeletingGuardianId] = useState<string | null>(null);
+  const [changingPasswordGuardian, setChangingPasswordGuardian] = useState<Guardian | null>(null);
 
   // Teacher state
   const [deletingTeacherId, setDeletingTeacherId] = useState<string | null>(null);
@@ -182,6 +184,20 @@ const UserManagement = () => {
     fetchData();
   };
 
+  const handleUpdateGuardianPassword = async (guardianId: string, newPassword: string) => {
+    const { data, error } = await supabase.functions.invoke('update-user-password', {
+      body: { userId: guardianId, password: newPassword },
+    });
+
+    if (error || data?.error) {
+      showError("Erro ao atualizar a senha.");
+      console.error("Function invoke error:", error || data?.error);
+    } else {
+      showSuccess("Senha do responsável atualizada com sucesso!");
+    }
+    setChangingPasswordGuardian(null);
+  };
+
   const confirmDeleteGuardian = async () => {
     if (deletingGuardianId) {
       // This will cascade delete from auth.users due to the foreign key constraint
@@ -262,6 +278,7 @@ const UserManagement = () => {
                 guardians={guardians}
                 onEdit={setEditingGuardian}
                 onDelete={setDeletingGuardianId}
+                onChangePassword={setChangingPasswordGuardian}
               />
             </CardContent>
           </Card>
@@ -302,6 +319,12 @@ const UserManagement = () => {
         open={!!editingGuardian}
         onOpenChange={(open) => !open && setEditingGuardian(null)}
         onSave={handleUpdateGuardian}
+      />
+      <EditGuardianPasswordDialog
+        guardian={changingPasswordGuardian}
+        open={!!changingPasswordGuardian}
+        onOpenChange={(open) => !open && setChangingPasswordGuardian(null)}
+        onSave={handleUpdateGuardianPassword}
       />
       <DeleteConfirmationDialog
         open={!!deletingGuardianId}

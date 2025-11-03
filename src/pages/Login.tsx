@@ -7,44 +7,62 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ArrowLeft, Terminal } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { supabase } from '@/integrations/supabase/client';
 
 const Login = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { login, isAuthenticated } = useAuth();
-  const role = searchParams.get('role') as 'admin' | 'professor' | 'aluno' | null;
+  const { session, setRole } = useAuth();
+  const roleParam = searchParams.get('role') as 'admin' | 'professor' | 'aluno' | null;
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (isAuthenticated) {
-      navigate(`/${role}`);
+    if (session) {
+      navigate(`/${roleParam}`);
     }
-  }, [isAuthenticated, navigate, role]);
+  }, [session, navigate, roleParam]);
 
-  if (!role) {
+  if (!roleParam) {
     navigate('/');
     return null;
   }
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setLoading(true);
 
-    if (role === 'admin') {
+    if (roleParam === 'admin') {
       if (email === 'escola@email.com' && password === '123456') {
-        login(role);
-        navigate(`/${role}`);
+        // This is a mock login for admin, we can replace it later if needed
+        setRole('admin');
+        navigate('/admin');
       } else {
-        setError('Email ou senha inválidos.');
+        setError('Email ou senha de administrador inválidos.');
       }
+    } else if (roleParam === 'professor') {
+        // Mock login for professor
+        setRole('professor');
+        navigate('/professor');
     } else {
-      // Para outros perfis, o login é direto (sem validação por enquanto)
-      login(role);
-      navigate(`/${role}`);
+      // Real Supabase login for guardians/aluno
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        setError(error.message);
+      } else {
+        setRole('aluno');
+        navigate('/aluno');
+      }
     }
+    setLoading(false);
   };
 
   const roleNames = {
@@ -57,7 +75,7 @@ const Login = () => {
     <div className="flex min-h-screen items-center justify-center bg-gray-100 dark:bg-background">
       <Card className="w-full max-w-sm">
         <CardHeader>
-          <CardTitle className="text-2xl">Login de {roleNames[role]}</CardTitle>
+          <CardTitle className="text-2xl">Login de {roleNames[roleParam]}</CardTitle>
           <CardDescription>Digite seu email e senha para continuar.</CardDescription>
         </CardHeader>
         <form onSubmit={handleLogin}>
@@ -79,7 +97,9 @@ const Login = () => {
             </div>
           </CardContent>
           <CardFooter className="flex flex-col gap-2">
-            <Button type="submit" className="w-full">Entrar</Button>
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? 'Entrando...' : 'Entrar'}
+            </Button>
             <Button type="button" variant="outline" className="w-full" onClick={() => navigate('/')}>
               <ArrowLeft className="mr-2 h-4 w-4" />
               Voltar

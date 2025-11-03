@@ -6,13 +6,18 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
-  const { role, isAuthenticated } = useAuth();
+  const { session, role } = useAuth();
+
+  // The admin/professor roles are still mocked for now
+  const isAuthenticated = !!session || (role && ['admin', 'professor'].includes(role));
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
 
-  return allowedRoles.includes(role || '') ? <Outlet /> : <Navigate to="/" replace />;
+  const userRole = session ? 'aluno' : role;
+
+  return allowedRoles.includes(userRole || '') ? <Outlet /> : <Navigate to="/" replace />;
 };
 
 export default ProtectedRoute;

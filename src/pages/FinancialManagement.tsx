@@ -29,11 +29,8 @@ import { showSuccess, showError } from "@/utils/toast";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 
-// Simula o responsável logado
-const LOGGED_IN_GUARDIAN_ID = "g1";
-
 const FinancialManagement = () => {
-  const { role } = useAuth();
+  const { role, user } = useAuth();
   const [boletos, setBoletos] = useState<Boleto[]>([]);
   const [guardians, setGuardians] = useState<Guardian[]>([]);
   const [selectedGuardian, setSelectedGuardian] = useState<string>("all");
@@ -73,11 +70,11 @@ const FinancialManagement = () => {
   }, [fetchData]);
 
   const visibleBoletos = useMemo(() => {
-    if (role === 'aluno') {
-      return boletos.filter(b => b.guardianId === LOGGED_IN_GUARDIAN_ID);
+    if (role === 'aluno' && user) {
+      return boletos.filter(b => b.guardianId === user.id);
     }
     return boletos;
-  }, [boletos, role]);
+  }, [boletos, role, user]);
 
   const financialSummary = useMemo(() => {
     return visibleBoletos.reduce(

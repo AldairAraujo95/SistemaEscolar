@@ -84,32 +84,50 @@ const UserManagement = () => {
         showSuccess("Aluno adicionado com sucesso!");
       }
     } else if (type === "guardian") {
-      const { data: newGuardianData, error: guardianError } = await supabase.from('guardians').insert({
-        name: data.name,
+      // 1. Create the authentication user
+      const { data: authData, error: authError } = await supabase.auth.signUp({
         email: data.email,
-        phone: data.phone,
-        due_date_day: parseInt(data.dueDateDay, 10) || 10,
-      }).select().single();
+        password: data.password,
+      });
 
-      if (guardianError) {
-        showError("Erro ao adicionar responsável.");
-        console.error(guardianError);
+      if (authError) {
+        showError(authError.message);
+        console.error(authError);
         return;
       }
 
-      if (newGuardianData && data.students && data.students.length > 0) {
-        const newStudents = data.students.map((s: any) => ({
-          name: s.name,
-          class_name: s.class,
-          guardian_id: newGuardianData.id,
-        }));
-        const { error: studentError } = await supabase.from('students').insert(newStudents);
-        if (studentError) {
-          showError("Erro ao vincular alunos ao responsável.");
-          console.error(studentError);
+      if (authData.user) {
+        // 2. Create the guardian profile linked to the auth user
+        const { error: guardianError } = await supabase.from('guardians').insert({
+          id: authData.user.id, // Link to the auth user
+          name: data.name,
+          email: data.email,
+          phone: data.phone,
+          due_date_day: parseInt(data.dueDateDay, 10) || 10,
+        });
+
+        if (guardianError) {
+          showError("Erro ao criar perfil do responsável.");
+          console.error(guardianError);
+          // TODO: Consider deleting the created auth user for cleanup
+          return;
         }
+
+        // 3. Link any new students to this guardian
+        if (data.students && data.students.length > 0) {
+          const newStudents = data.students.map((s: any) => ({
+            name: s.name,
+            class_name: s.class,
+            guardian_id: authData.user!.id,
+          }));
+          const { error: studentError } = await supabase.from('students').insert(newStudents);
+          if (studentError) {
+            showError("Erro ao vincular alunos ao responsável.");
+            console.error(studentError);
+          }
+        }
+        showSuccess("Responsável e conta de acesso criados com sucesso!");
       }
-      showSuccess("Responsável adicionado com sucesso!");
     } else if (type === "teacher") {
       const { error } = await supabase.from('teachers').insert({
         name: data.name,
@@ -166,6 +184,7 @@ const UserManagement = () => {
 
   const confirmDeleteGuardian = async () => {
     if (deletingGuardianId) {
+      // This will cascade delete from auth.users due to the foreign key constraint
       const { error } = await supabase.from('guardians').delete().eq('id', deletingGuardianId);
       if (error) showError("Erro ao excluir responsável."); else showSuccess("Responsável excluído com sucesso!");
       setDeletingGuardianId(null);
@@ -289,7 +308,7 @@ const UserManagement = () => {
         onOpenChange={(open) => !open && setDeletingGuardianId(null)}
         onConfirm={confirmDeleteGuardian}
         title="Confirmar Exclusão"
-        description="Tem certeza que deseja excluir este responsável? Alunos associados não serão removidos, mas ficarão sem responsável. Esta ação não pode ser desfeita."
+        description="Tem certeza que deseja excluir este responsável? A conta de acesso associada também será removida. Esta ação não pode ser desfeita."
       />
 
       <EditTeacherDialog

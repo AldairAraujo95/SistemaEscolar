@@ -37,7 +37,7 @@ const AdminSidebar = () => {
       <div className="p-4 border-b border-gray-200 dark:border-gray-800">
         <h1 className="text-2xl font-bold flex items-center gap-2">
           <School className="h-7 w-7" />
-          <span>Sys Scolar</span>
+          <span>Sistema Escolar</span>
         </h1>
       </div>
       <nav className="flex-1 p-4 space-y-2">

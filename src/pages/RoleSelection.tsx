@@ -18,7 +18,7 @@ const RoleSelection = () => {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-gray-100 dark:bg-background">
       <div className="mb-8 text-center">
-        <h1 className="text-4xl font-bold">Bem-vindo ao Sys Scolar</h1>
+        <h1 className="text-4xl font-bold">Bem-vindo ao Sistema Escolar</h1>
         <p className="text-lg text-gray-600 dark:text-gray-400">Selecione seu perfil para continuar</p>
       </div>
       <div className="grid grid-cols-1 gap-8 md:grid-cols-3">

@@ -86,48 +86,22 @@ const UserManagement = () => {
         showSuccess("Aluno adicionado com sucesso!");
       }
     } else if (type === "guardian") {
-      // 1. Create the authentication user
-      const { data: authData, error: authError } = await supabase.auth.signUp({
+      const guardianData = {
+        name: data.name,
         email: data.email,
         password: data.password,
+        phone: data.phone,
+        dueDateDay: parseInt(data.dueDateDay, 10) || 10,
+      };
+
+      const { error } = await supabase.functions.invoke('create-guardian', {
+        body: { guardian: guardianData, students: data.students },
       });
 
-      if (authError) {
-        showError(authError.message);
-        console.error(authError);
-        return;
-      }
-
-      if (authData.user) {
-        // 2. Create the guardian profile linked to the auth user
-        const { error: guardianError } = await supabase.from('guardians').insert({
-          id: authData.user.id, // Link to the auth user
-          name: data.name,
-          email: data.email,
-          phone: data.phone,
-          due_date_day: parseInt(data.dueDateDay, 10) || 10,
-        });
-
-        if (guardianError) {
-          showError("Erro ao criar perfil do responsável.");
-          console.error(guardianError);
-          // TODO: Consider deleting the created auth user for cleanup
-          return;
-        }
-
-        // 3. Link any new students to this guardian
-        if (data.students && data.students.length > 0) {
-          const newStudents = data.students.map((s: any) => ({
-            name: s.name,
-            class_name: s.class,
-            guardian_id: authData.user!.id,
-          }));
-          const { error: studentError } = await supabase.from('students').insert(newStudents);
-          if (studentError) {
-            showError("Erro ao vincular alunos ao responsável.");
-            console.error(studentError);
-          }
-        }
+      if (error) {
+        showError(error.message);
+        console.error("Function invoke error:", error);
+      } else {
         showSuccess("Responsável e conta de acesso criados com sucesso!");
       }
     } else if (type === "teacher") {

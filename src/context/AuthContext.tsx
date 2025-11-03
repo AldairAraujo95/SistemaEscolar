@@ -33,45 +33,51 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     const fetchProfile = async (userId: string, currentRole: Role) => {
-      if (currentRole === 'aluno') {
-        const { data } = await supabase.from('guardians').select('*').eq('id', userId).single();
-        setProfile(data);
-      } else if (currentRole === 'professor') {
-        const { data } = await supabase.from('teachers').select('*').eq('id', userId).single();
-        setProfile(data);
-      } else {
+      if (!currentRole) {
+        setProfile(null);
+        return;
+      }
+      try {
+        let profileData = null;
+        if (currentRole === 'aluno') {
+          const { data, error } = await supabase.from('guardians').select('*').eq('id', userId).single();
+          if (error) throw error;
+          profileData = data;
+        } else if (currentRole === 'professor') {
+          const { data, error } = await supabase.from('teachers').select('*').eq('id', userId).single();
+          if (error) throw error;
+          profileData = data;
+        }
+        setProfile(profileData);
+      } catch (error) {
+        console.error("Error fetching profile:", error);
         setProfile(null);
       }
     };
 
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      const currentRole = localStorage.getItem('userRole') as Role;
+      if (session?.user && currentRole) {
+        fetchProfile(session.user.id, currentRole);
+      }
+    });
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
         setSession(session);
-        const currentUser = session?.user ?? null;
-        setUser(currentUser);
+        setUser(session?.user ?? null);
         const currentRole = localStorage.getItem('userRole') as Role;
 
-        if (currentUser && currentRole) {
-          await fetchProfile(currentUser.id, currentRole);
-        } else {
+        if (_event === 'SIGNED_IN' && session?.user && currentRole) {
+          await fetchProfile(session.user.id, currentRole);
+        } else if (_event === 'SIGNED_OUT') {
           setProfile(null);
-          if (_event === 'SIGNED_OUT') {
-            handleSetRole(null);
-          }
+          handleSetRole(null);
         }
       }
     );
-
-    // Set initial session and profile
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      setSession(session);
-      const currentUser = session?.user ?? null;
-      setUser(currentUser);
-      const currentRole = localStorage.getItem('userRole') as Role;
-      if (currentUser && currentRole) {
-        await fetchProfile(currentUser.id, currentRole);
-      }
-    });
 
     return () => {
       subscription.unsubscribe();
@@ -80,7 +86,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const logout = async () => {
     await supabase.auth.signOut();
-    // The onAuthStateChange listener will handle clearing role and profile
+    // Manually clear state to prevent race conditions
+    setSession(null);
+    setUser(null);
+    setProfile(null);
+    handleSetRole(null);
   };
 
   const value = {

@@ -1,43 +1,77 @@
+import { useState, useEffect } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Users, BookOpen, DollarSign, Calendar, Activity } from "lucide-react";
 import { Link } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { students, guardians, teachers } from "@/data/users";
+import { classes } from "@/data/academic";
+import { initialEvents } from "@/data/calendar";
+import { initialActivities } from "@/data/activities";
+import type { Boleto } from "@/types";
 
 const Dashboard = () => {
+  const [boletos, setBoletos] = useState<Boleto[]>([]);
+
+  useEffect(() => {
+    const fetchBoletos = async () => {
+      const { data, error } = await supabase.from('boletos').select('*');
+      if (error) {
+        console.error("Erro ao buscar boletos:", error);
+      } else {
+        const formattedData = data.map(item => ({
+          id: item.id,
+          guardianId: item.guardian_id,
+          amount: item.amount,
+          dueDate: item.due_date,
+          status: item.status as Boleto['status'],
+          filePath: item.file_path,
+        }));
+        setBoletos(formattedData);
+      }
+    };
+    fetchBoletos();
+  }, []);
+
+  const totalUsers = students.length + guardians.length + teachers.length;
+  const totalPendingAmount = boletos
+    .filter(b => b.status === 'a vencer' || b.status === 'vencido')
+    .reduce((sum, boleto) => sum + boleto.amount, 0);
+
   const summaryCards = [
     {
       title: "Gestão de Usuários",
-      description: "Pais e Professores",
+      description: "Alunos, Pais e Professores",
       icon: <Users className="h-6 w-6 text-gray-500" />,
-      value: "1,250",
-      link: "/users",
+      value: `${totalUsers} Usuários`,
+      link: "/admin/users",
     },
     {
       title: "Gestão Acadêmica",
       description: "Turmas e Disciplinas",
       icon: <BookOpen className="h-6 w-6 text-gray-500" />,
-      value: "45 Turmas",
-      link: "/academic",
+      value: `${classes.length} Turmas`,
+      link: "/admin/academic",
     },
     {
       title: "Gestão Financeira",
-      description: "Boletos e Mensalidades",
+      description: "Total a receber",
       icon: <DollarSign className="h-6 w-6 text-gray-500" />,
-      value: "R$ 120.5k",
-      link: "/financial",
+      value: totalPendingAmount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }),
+      link: "/admin/financial",
     },
     {
       title: "Agenda Escolar",
       description: "Próximos Eventos",
       icon: <Calendar className="h-6 w-6 text-gray-500" />,
-      value: "5 Eventos",
-      link: "/calendar",
+      value: `${initialEvents.length} Eventos`,
+      link: "/admin/calendar",
     },
     {
       title: "Feed de Atividades",
       description: "Últimas Postagens",
       icon: <Activity className="h-6 w-6 text-gray-500" />,
-      value: "12 Novas",
-      link: "/feed",
+      value: `${initialActivities.length} Postagens`,
+      link: "/admin/feed",
     },
   ];
 

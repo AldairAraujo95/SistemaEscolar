@@ -10,14 +10,13 @@ interface AuthContextType {
   user: User | null;
   profile: UserProfile | null;
   role: Role;
+  loading: boolean;
   setRole: (role: Role) => void;
   logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Manually define the key used by Supabase to store the auth token.
-// This makes the logout process more robust.
 const SUPABASE_PROJECT_REF = "iymefizdnhhvulttjjrz";
 const AUTH_TOKEN_KEY = `sb-${SUPABASE_PROJECT_REF}-auth-token`;
 
@@ -26,6 +25,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [role, setRole] = useState<Role>(() => localStorage.getItem('userRole') as Role);
+  const [loading, setLoading] = useState(true);
 
   const handleSetRole = (newRole: Role) => {
     setRole(newRole);
@@ -38,34 +38,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     const fetchProfile = async (userId: string, currentRole: Role) => {
-      if (!currentRole) {
+      if (!currentRole || currentRole === 'admin') {
         setProfile(null);
         return;
       }
       try {
-        let profileData = null;
-        if (currentRole === 'aluno') {
-          const { data, error } = await supabase.from('guardians').select('*').eq('id', userId).single();
-          if (error) throw error;
-          profileData = data;
-        } else if (currentRole === 'professor') {
-          const { data, error } = await supabase.from('teachers').select('*').eq('id', userId).single();
-          if (error) throw error;
-          profileData = data;
-        }
-        setProfile(profileData);
+        const tableName = currentRole === 'aluno' ? 'guardians' : 'teachers';
+        const { data, error } = await supabase.from(tableName).select('*').eq('id', userId).single();
+        if (error) throw error;
+        setProfile(data);
       } catch (error) {
         console.error("Error fetching profile:", error);
         setProfile(null);
       }
     };
 
+    setLoading(true);
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
       const currentRole = localStorage.getItem('userRole') as Role;
       if (session?.user && currentRole) {
-        fetchProfile(session.user.id, currentRole);
+        fetchProfile(session.user.id, currentRole).finally(() => setLoading(false));
+      } else {
+        setLoading(false);
       }
     });
 
@@ -76,10 +72,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const currentRole = localStorage.getItem('userRole') as Role;
 
         if (_event === 'SIGNED_IN' && session?.user && currentRole) {
+          setLoading(true);
           await fetchProfile(session.user.id, currentRole);
+          setLoading(false);
         } else if (_event === 'SIGNED_OUT') {
           setProfile(null);
           handleSetRole(null);
+          setLoading(false);
         }
       }
     );
@@ -90,15 +89,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const logout = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-        console.error("Error during sign out:", error);
-    }
-    // Force clear local storage to ensure session is terminated completely
+    await supabase.auth.signOut();
     localStorage.removeItem(AUTH_TOKEN_KEY);
     localStorage.removeItem('userRole');
-    
-    // Clear React state as a final measure
     setSession(null);
     setUser(null);
     setProfile(null);
@@ -110,6 +103,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     user,
     profile,
     role,
+    loading,
     setRole: handleSetRole,
     logout,
   };

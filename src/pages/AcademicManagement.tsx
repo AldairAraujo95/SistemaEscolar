@@ -42,8 +42,20 @@ const AcademicManagement = () => {
     } else {
       setDisciplines(disciplinesData);
       setClasses(classesData);
-      setStudents(studentsData.map(s => ({ ...s, class: s.class_name })));
-      setGrades(gradesData);
+      setStudents(studentsData.map(s => ({
+        id: s.id,
+        name: s.name,
+        cpf: s.cpf,
+        guardianId: s.guardian_id,
+        class: s.class_name,
+      })));
+      setGrades(gradesData.map(g => ({
+        id: g.id,
+        studentId: g.student_id,
+        disciplineId: g.discipline_id,
+        grade: g.grade,
+        unit: g.unit,
+      })));
     }
   }, []);
 
@@ -99,8 +111,14 @@ const AcademicManagement = () => {
 
   // Grade Handler
   const handleGradesChange = async (gradesToUpsert: Grade[]) => {
+    const payload = gradesToUpsert.map(g => ({
+      student_id: g.studentId,
+      discipline_id: g.disciplineId,
+      grade: g.grade,
+      unit: g.unit,
+    }));
     const { error } = await supabase.from('grades').upsert(
-      gradesToUpsert.map(({ id, ...rest }) => rest),
+      payload,
       { onConflict: 'student_id,discipline_id,unit' }
     );
     if (error) {

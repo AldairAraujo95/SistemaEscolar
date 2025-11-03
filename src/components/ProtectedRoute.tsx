@@ -6,17 +6,22 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
-  const { session, role } = useAuth();
+  const { session, role, loading } = useAuth();
 
-  // Admin role is mocked, others rely on a session
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <p>Carregando...</p>
+      </div>
+    );
+  }
+
   const isAuthenticated = !!session || role === 'admin';
 
   if (!isAuthenticated) {
-    // Redirect to the main role selection page if not authenticated
     return <Navigate to="/" replace />;
   }
 
-  // If authenticated, check if the role is allowed for this route
   return allowedRoles.includes(role || '') ? <Outlet /> : <Navigate to="/" replace />;
 };
 

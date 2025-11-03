@@ -38,10 +38,16 @@ const ActivityFeed = () => {
     if (activitiesError || classesError || disciplinesError || studentsError) {
       showError("Erro ao carregar dados do feed.");
     } else {
-      setActivities(activitiesData.map(a => ({ ...a, dueDate: new Date(a.due_date), classId: a.class_id, disciplineId: a.discipline_id })));
+      setActivities(activitiesData.map(a => ({ id: a.id, description: a.description, dueDate: new Date(a.due_date), classId: a.class_id, disciplineId: a.discipline_id })));
       setClasses(classesData);
       setDisciplines(disciplinesData);
-      setStudents(studentsData.map(s => ({ ...s, class: s.class_name, guardianId: s.guardian_id })));
+      setStudents(studentsData.map(s => ({
+        id: s.id,
+        name: s.name,
+        cpf: s.cpf,
+        guardianId: s.guardian_id,
+        class: s.class_name,
+      })));
     }
   }, []);
 

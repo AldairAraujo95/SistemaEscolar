@@ -38,7 +38,13 @@ const AlunoGrades = () => {
     if (studentsError || disciplinesError) {
       showError("Erro ao carregar dados.");
     } else {
-      const formattedStudents = studentsData.map(s => ({ ...s, class: s.class_name, guardianId: s.guardian_id, id: s.id, name: s.name, cpf: s.cpf }));
+      const formattedStudents = studentsData.map(s => ({
+        id: s.id,
+        name: s.name,
+        cpf: s.cpf,
+        guardianId: s.guardian_id,
+        class: s.class_name,
+      }));
       setStudents(formattedStudents);
       setDisciplines(disciplinesData);
       if (formattedStudents.length > 0) {
@@ -62,7 +68,13 @@ const AlunoGrades = () => {
       showError("Erro ao carregar as notas do aluno.");
       setGrades([]);
     } else {
-      setGrades(gradesData.map(g => ({ ...g, studentId: g.student_id, disciplineId: g.discipline_id })));
+      setGrades(gradesData.map(g => ({
+        id: g.id,
+        studentId: g.student_id,
+        disciplineId: g.discipline_id,
+        grade: g.grade,
+        unit: g.unit,
+      })));
     }
   }, [selectedStudentId]);
 
@@ -135,7 +147,7 @@ const AlunoGrades = () => {
                         <TableRow key={discipline.id}>
                           <TableCell className="font-medium">{discipline.name}</TableCell>
                           <TableCell className="text-right font-bold">
-                            {grade ? grade.grade?.toFixed(1) : "N/L"}
+                            {grade && grade.grade !== null ? grade.grade.toFixed(1) : "N/L"}
                           </TableCell>
                         </TableRow>
                       );

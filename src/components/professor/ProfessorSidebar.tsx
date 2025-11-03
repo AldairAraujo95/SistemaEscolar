@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { DeveloperCredit } from "../DeveloperCredit";
 
 const ProfessorSidebar = () => {
-  const { logout } = useAuth();
+  const { logout, profile } = useAuth();
   const navigate = useNavigate();
 
   const navItems = [
@@ -15,8 +15,8 @@ const ProfessorSidebar = () => {
     { to: "/professor/calendar", icon: Calendar, label: "Agenda Escolar" },
   ];
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     navigate('/');
   };
 
@@ -27,6 +27,11 @@ const ProfessorSidebar = () => {
           <School className="h-7 w-7" />
           <span>Portal do Professor</span>
         </h1>
+        {profile && (
+          <p className="text-sm text-gray-500 mt-2 truncate">
+            Bem-vindo(a), {profile.name}
+          </p>
+        )}
       </div>
       <nav className="flex-1 p-4 space-y-2">
         {navItems.map((item) => (

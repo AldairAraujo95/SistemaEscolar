@@ -27,8 +27,8 @@ const AdminSidebar = () => {
     { to: "/admin/feed", icon: Activity, label: "Feed de Atividades" },
   ];
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     navigate('/');
   };
 
@@ -39,6 +39,9 @@ const AdminSidebar = () => {
           <School className="h-7 w-7" />
           <span>Sistema Escolar</span>
         </h1>
+        <p className="text-sm text-gray-500 mt-2 truncate">
+          Bem-vindo(a), Administrador
+        </p>
       </div>
       <nav className="flex-1 p-4 space-y-2">
         {navItems.map((item) => (

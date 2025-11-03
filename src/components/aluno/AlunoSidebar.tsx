@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { DeveloperCredit } from "../DeveloperCredit";
 
 const AlunoSidebar = () => {
-  const { logout } = useAuth();
+  const { logout, profile } = useAuth();
   const navigate = useNavigate();
 
   const navItems = [
@@ -16,8 +16,8 @@ const AlunoSidebar = () => {
     { to: "/aluno/grades", icon: ClipboardCheck, label: "Minhas Notas" },
   ];
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     navigate('/');
   };
 
@@ -28,6 +28,11 @@ const AlunoSidebar = () => {
           <School className="h-7 w-7" />
           <span>Portal do Aluno</span>
         </h1>
+        {profile && (
+          <p className="text-sm text-gray-500 mt-2 truncate">
+            Bem-vindo(a), {profile.name}
+          </p>
+        )}
       </div>
       <nav className="flex-1 p-4 space-y-2">
         {navItems.map((item) => (

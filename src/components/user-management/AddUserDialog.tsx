@@ -32,6 +32,7 @@ interface AddUserDialogProps {
 
 export const AddUserDialog = ({ guardians, classes, disciplines, onAddUser }: AddUserDialogProps) => {
   const [open, setOpen] = useState(false);
+  const [dueDateDay, setDueDateDay] = useState("10");
   const [newStudents, setNewStudents] = useState([{ name: "", class: "" }]);
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
   const [selectedClasses, setSelectedClasses] = useState<string[]>([]);
@@ -69,7 +70,7 @@ export const AddUserDialog = ({ guardians, classes, disciplines, onAddUser }: Ad
         name: formData.get("guardian-name"),
         email: formData.get("guardian-email"),
         phone: formData.get("guardian-phone"),
-        dueDateDay: formData.get("due-date-day"),
+        dueDateDay: dueDateDay,
         students: newStudents.filter(s => s.name && s.class),
       };
     } else if (activeTab === "teacher") {
@@ -83,6 +84,7 @@ export const AddUserDialog = ({ guardians, classes, disciplines, onAddUser }: Ad
     
     onAddUser(activeTab as string, data);
     setOpen(false);
+    setDueDateDay("10");
     setNewStudents([{ name: "", class: "" }]);
     setSelectedSubjects([]);
     setSelectedClasses([]);
@@ -170,7 +172,7 @@ export const AddUserDialog = ({ guardians, classes, disciplines, onAddUser }: Ad
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="due-date-day" className="text-right">Vencimento</Label>
-                  <Select name="due-date-day" defaultValue="10">
+                  <Select name="due-date-day" value={dueDateDay} onValueChange={setDueDateDay}>
                     <SelectTrigger className="col-span-3">
                       <SelectValue placeholder="Dia do vencimento" />
                     </SelectTrigger>

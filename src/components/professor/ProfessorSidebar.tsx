@@ -24,7 +24,7 @@ const ProfessorSidebar = () => {
       <div className="p-4 border-b border-gray-200 dark:border-gray-800">
         <h1 className="text-2xl font-bold flex items-center gap-2">
           <School className="h-7 w-7" />
-          <span>Portal do Professor</span>
+          <span>Sistema Escolar</span>
         </h1>
         {profile && (
           <p className="text-sm text-gray-500 mt-2 truncate">

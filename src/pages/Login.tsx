@@ -12,7 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
 const Login = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { session, setRole } = useAuth();
+  const { session, setRole, role } = useAuth();
   const roleParam = searchParams.get('role') as 'admin' | 'professor' | 'aluno' | null;
 
   const [email, setEmail] = useState('');
@@ -21,10 +21,10 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (session) {
-      navigate(`/${roleParam}`);
+    if (session && role) {
+      navigate(`/${role}`);
     }
-  }, [session, navigate, roleParam]);
+  }, [session, role, navigate]);
 
   if (!roleParam) {
     navigate('/');
@@ -35,21 +35,18 @@ const Login = () => {
     e.preventDefault();
     setError('');
     setLoading(true);
+    setRole(roleParam); // Set role optimistically
 
     if (roleParam === 'admin') {
       if (email === 'escola@email.com' && password === '123456') {
-        // This is a mock login for admin, we can replace it later if needed
-        setRole('admin');
+        // This is a mock login for admin
         navigate('/admin');
       } else {
         setError('Email ou senha de administrador inválidos.');
+        setRole(null); // Revert role if login fails
       }
-    } else if (roleParam === 'professor') {
-        // Mock login for professor
-        setRole('professor');
-        navigate('/professor');
     } else {
-      // Real Supabase login for guardians/aluno
+      // Real Supabase login for professors and guardians/aluno
       const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -57,9 +54,10 @@ const Login = () => {
 
       if (error) {
         setError(error.message);
+        setRole(null); // Revert role if login fails
       } else {
-        setRole('aluno');
-        navigate('/aluno');
+        // On success, the AuthContext listener will handle the session
+        // and the useEffect above will redirect.
       }
     }
     setLoading(false);

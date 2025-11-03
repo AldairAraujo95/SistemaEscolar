@@ -129,9 +129,10 @@ interface TeachersTableProps {
   teachers: Teacher[];
   onEdit: (teacher: Teacher) => void;
   onDelete: (teacherId: string) => void;
+  onChangePassword: (teacher: Teacher) => void;
 }
 
-export const TeachersTable = ({ teachers, onEdit, onDelete }: TeachersTableProps) => (
+export const TeachersTable = ({ teachers, onEdit, onDelete, onChangePassword }: TeachersTableProps) => (
   <Table>
     <TableHeader>
       <TableRow>
@@ -159,7 +160,11 @@ export const TeachersTable = ({ teachers, onEdit, onDelete }: TeachersTableProps
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={() => onEdit(teacher)}>
                   <Edit className="mr-2 h-4 w-4" />
-                  Editar
+                  Editar Dados
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onChangePassword(teacher)}>
+                  <KeyRound className="mr-2 h-4 w-4" />
+                  Alterar Senha
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => onDelete(teacher.id)} className="text-red-600">
                   <Trash2 className="mr-2 h-4 w-4" />

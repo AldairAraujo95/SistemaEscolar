@@ -77,6 +77,7 @@ export const AddUserDialog = ({ guardians, classes, disciplines, onAddUser }: Ad
       data = {
         name: formData.get("teacher-name"),
         email: formData.get("teacher-email"),
+        password: formData.get("teacher-password"),
         subjects: selectedSubjects,
         classes: selectedClasses,
       };
@@ -225,7 +226,11 @@ export const AddUserDialog = ({ guardians, classes, disciplines, onAddUser }: Ad
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="teacher-email" className="text-right">Email</Label>
-                  <Input id="teacher-email" name="teacher-email" type="email" placeholder="email@school.com" className="col-span-3" />
+                  <Input id="teacher-email" name="teacher-email" type="email" placeholder="email@school.com" className="col-span-3" required />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="teacher-password" className="text-right">Senha</Label>
+                  <Input id="teacher-password" name="teacher-password" type="password" placeholder="Senha de acesso" className="col-span-3" required />
                 </div>
                 <div className="grid grid-cols-4 items-start gap-4">
                   <Label htmlFor="subjects" className="text-right pt-2">Disciplinas</Label>

@@ -12,6 +12,7 @@ import { EditTeacherDialog } from "@/components/user-management/EditTeacherDialo
 import { EditStudentDialog } from "@/components/user-management/EditStudentDialog";
 import { EditGuardianDialog } from "@/components/user-management/EditGuardianDialog";
 import { EditGuardianPasswordDialog } from "@/components/user-management/EditGuardianPasswordDialog";
+import { EditTeacherPasswordDialog } from "@/components/user-management/EditTeacherPasswordDialog";
 import type { Student, Guardian, Teacher, Class, Discipline } from "@/types";
 import { showSuccess, showError } from "@/utils/toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -70,6 +71,7 @@ const UserManagement = () => {
   // Teacher state
   const [deletingTeacherId, setDeletingTeacherId] = useState<string | null>(null);
   const [editingTeacher, setEditingTeacher] = useState<Teacher | null>(null);
+  const [changingPasswordTeacher, setChangingPasswordTeacher] = useState<Teacher | null>(null);
 
   const handleAddUser = async (type: string, data: any) => {
     if (type === "student") {
@@ -105,17 +107,23 @@ const UserManagement = () => {
         showSuccess("Responsável e conta de acesso criados com sucesso!");
       }
     } else if (type === "teacher") {
-      const { error } = await supabase.from('teachers').insert({
+      const professorData = {
         name: data.name,
         email: data.email,
+        password: data.password,
         subjects: data.subjects,
         classes: data.classes,
+      };
+
+      const { error } = await supabase.functions.invoke('create-professor', {
+        body: { professor: professorData },
       });
+
       if (error) {
-        showError("Erro ao adicionar professor.");
-        console.error(error);
+        showError(error.message);
+        console.error("Function invoke error:", error);
       } else {
-        showSuccess("Professor adicionado com sucesso!");
+        showSuccess("Professor e conta de acesso criados com sucesso!");
       }
     }
     fetchData();
@@ -174,7 +182,6 @@ const UserManagement = () => {
 
   const confirmDeleteGuardian = async () => {
     if (deletingGuardianId) {
-      // This will cascade delete from auth.users due to the foreign key constraint
       const { error } = await supabase.from('guardians').delete().eq('id', deletingGuardianId);
       if (error) showError("Erro ao excluir responsável."); else showSuccess("Responsável excluído com sucesso!");
       setDeletingGuardianId(null);
@@ -194,6 +201,20 @@ const UserManagement = () => {
     if (error) showError("Erro ao atualizar professor."); else showSuccess("Professor atualizado com sucesso!");
     setEditingTeacher(null);
     fetchData();
+  };
+
+  const handleUpdateTeacherPassword = async (teacherId: string, newPassword: string) => {
+    const { data, error } = await supabase.functions.invoke('update-user-password', {
+      body: { userId: teacherId, password: newPassword },
+    });
+
+    if (error || data?.error) {
+      showError("Erro ao atualizar a senha.");
+      console.error("Function invoke error:", error || data?.error);
+    } else {
+      showSuccess("Senha do professor atualizada com sucesso!");
+    }
+    setChangingPasswordTeacher(null);
   };
 
   const confirmDeleteTeacher = async () => {
@@ -265,7 +286,12 @@ const UserManagement = () => {
               <CardDescription>Lista de todos os professores cadastrados.</CardDescription>
             </CardHeader>
             <CardContent>
-              <TeachersTable teachers={teachers} onEdit={setEditingTeacher} onDelete={setDeletingTeacherId} />
+              <TeachersTable
+                teachers={teachers}
+                onEdit={setEditingTeacher}
+                onDelete={setDeletingTeacherId}
+                onChangePassword={setChangingPasswordTeacher}
+              />
             </CardContent>
           </Card>
         </TabsContent>
@@ -314,12 +340,18 @@ const UserManagement = () => {
         onOpenChange={(open) => !open && setEditingTeacher(null)}
         onSave={handleUpdateTeacher}
       />
+      <EditTeacherPasswordDialog
+        teacher={changingPasswordTeacher}
+        open={!!changingPasswordTeacher}
+        onOpenChange={(open) => !open && setChangingPasswordTeacher(null)}
+        onSave={handleUpdateTeacherPassword}
+      />
       <DeleteConfirmationDialog
         open={!!deletingTeacherId}
         onOpenChange={(open) => !open && setDeletingTeacherId(null)}
         onConfirm={confirmDeleteTeacher}
         title="Confirmar Exclusão"
-        description="Tem certeza que deseja excluir este professor? Esta ação não pode ser desfeita."
+        description="Tem certeza que deseja excluir este professor? A conta de acesso associada também será removida. Esta ação não pode ser desfeita."
       />
     </div>
   );

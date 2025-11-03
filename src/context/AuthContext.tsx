@@ -20,7 +20,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Guardian | null>(null);
-  const [role, setRole] = useState<Role>(null);
+  const [role, setRole] = useState<Role>(() => localStorage.getItem('userRole') as Role);
+
+  const handleSetRole = (newRole: Role) => {
+    setRole(newRole);
+    if (newRole) {
+      localStorage.setItem('userRole', newRole);
+    } else {
+      localStorage.removeItem('userRole');
+    }
+  };
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -29,20 +38,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser(session?.user ?? null);
 
         if (session?.user) {
-          // If user is logged in, fetch their profile
-          const { data: guardianProfile, error } = await supabase
+          // If user is logged in, fetch their guardian profile (for student portal)
+          const { data: guardianProfile } = await supabase
             .from('guardians')
             .select('*')
             .eq('id', session.user.id)
             .single();
           
-          if (error) {
-            console.error("Error fetching guardian profile:", error);
-          } else {
+          if (guardianProfile) {
             setProfile(guardianProfile);
+          } else {
+            setProfile(null);
           }
         } else {
+          // User signed out
           setProfile(null);
+          handleSetRole(null); // Clear role on sign out
         }
       }
     );
@@ -60,7 +71,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const logout = async () => {
     await supabase.auth.signOut();
-    setRole(null);
+    handleSetRole(null);
   };
 
   const value = {
@@ -68,7 +79,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     user,
     profile,
     role,
-    setRole,
+    setRole: handleSetRole,
     logout,
   };
 

@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { v4 as uuidv4 } from "uuid";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
@@ -19,6 +20,7 @@ import { Label } from "@/components/ui/label";
 import { MoreHorizontal, Edit, TrendingUp, TrendingDown, CircleDollarSign } from "lucide-react";
 import { StatusBadge } from "@/components/financial-management/StatusBadge";
 import { EditBoletoDialog } from "@/components/financial-management/EditBoletoDialog";
+import { AddBoletoDialog } from "@/components/financial-management/AddBoletoDialog";
 import { FinancialChart } from "@/components/financial-management/FinancialChart";
 import { boletos as initialBoletos } from "@/data/financial";
 import { guardians as initialGuardians } from "@/data/users";
@@ -94,6 +96,18 @@ const FinancialManagement = () => {
     showSuccess("Status do boleto atualizado com sucesso!");
   };
 
+  const handleAddBoleto = (data: { guardianId: string; amount: number; dueDate: Date }) => {
+    const newBoleto: Boleto = {
+      id: uuidv4(),
+      guardianId: data.guardianId,
+      amount: data.amount,
+      dueDate: data.dueDate.toISOString().split('T')[0], // Formato YYYY-MM-DD
+      status: 'a vencer',
+    };
+    setBoletos([newBoleto, ...boletos]);
+    showSuccess("Boleto adicionado com sucesso!");
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -140,9 +154,12 @@ const FinancialManagement = () => {
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Histórico Financeiro Detalhado</CardTitle>
-          <CardDescription>Visualize e gerencie todos os boletos.</CardDescription>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle>Histórico Financeiro Detalhado</CardTitle>
+            <CardDescription>Visualize e gerencie todos os boletos.</CardDescription>
+          </div>
+          {role !== 'aluno' && <AddBoletoDialog guardians={guardians} onSave={handleAddBoleto} />}
         </CardHeader>
         <CardContent>
           <div className="flex flex-col sm:flex-row gap-4 mb-4">

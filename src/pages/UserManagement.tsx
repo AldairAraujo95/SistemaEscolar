@@ -1,5 +1,4 @@
-import { useState } from "react";
-import { v4 as uuidv4 } from "uuid";
+import { useState, useEffect, useCallback } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import {
@@ -12,17 +11,39 @@ import { DeleteConfirmationDialog } from "@/components/user-management/DeleteCon
 import { EditTeacherDialog } from "@/components/user-management/EditTeacherDialog";
 import { EditStudentDialog } from "@/components/user-management/EditStudentDialog";
 import { EditGuardianDialog } from "@/components/user-management/EditGuardianDialog";
-import { students as initialStudents, guardians as initialGuardians, teachers as initialTeachers } from "@/data/users";
-import { classes as initialClasses, disciplines as initialDisciplines } from "@/data/academic";
 import type { Student, Guardian, Teacher, Class, Discipline } from "@/types";
-import { showSuccess } from "@/utils/toast";
+import { showSuccess, showError } from "@/utils/toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const UserManagement = () => {
-  const [students, setStudents] = useState<Student[]>(initialStudents);
-  const [guardians, setGuardians] = useState<Guardian[]>(initialGuardians);
-  const [teachers, setTeachers] = useState<Teacher[]>(initialTeachers);
-  const [classes] = useState<Class[]>(initialClasses);
-  const [disciplines] = useState<Discipline[]>(initialDisciplines);
+  const [students, setStudents] = useState<Student[]>([]);
+  const [guardians, setGuardians] = useState<Guardian[]>([]);
+  const [teachers, setTeachers] = useState<Teacher[]>([]);
+  const [classes, setClasses] = useState<Class[]>([]);
+  const [disciplines, setDisciplines] = useState<Discipline[]>([]);
+
+  // --- Data Fetching ---
+  const fetchData = useCallback(async () => {
+    const { data: studentsData, error: studentsError } = await supabase.from('students').select('*').order('name');
+    const { data: guardiansData, error: guardiansError } = await supabase.from('guardians').select('*').order('name');
+    const { data: teachersData, error: teachersError } = await supabase.from('teachers').select('*').order('name');
+    const { data: classesData, error: classesError } = await supabase.from('classes').select('*').order('name');
+    const { data: disciplinesData, error: disciplinesError } = await supabase.from('disciplines').select('*').order('name');
+
+    if (studentsError || guardiansError || teachersError || classesError || disciplinesError) {
+      showError("Erro ao carregar os dados.");
+    } else {
+      setStudents(studentsData.map(s => ({ ...s, class: s.class_name })));
+      setGuardians(guardiansData.map(g => ({ ...g, dueDateDay: g.due_date_day })));
+      setTeachers(teachersData);
+      setClasses(classesData);
+      setDisciplines(disciplinesData);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   // Student state
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
@@ -36,102 +57,116 @@ const UserManagement = () => {
   const [deletingTeacherId, setDeletingTeacherId] = useState<string | null>(null);
   const [editingTeacher, setEditingTeacher] = useState<Teacher | null>(null);
 
-  const handleAddUser = (type: string, data: any) => {
+  const handleAddUser = async (type: string, data: any) => {
     if (type === "student") {
-      const newStudent: Student = { id: uuidv4(), ...data };
-      setStudents([...students, newStudent]);
+      const { error } = await supabase.from('students').insert({
+        name: data.name,
+        cpf: data.cpf,
+        class_name: data.class,
+        guardian_id: data.guardianId,
+      });
+      if (error) showError("Erro ao adicionar aluno."); else showSuccess("Aluno adicionado com sucesso!");
     } else if (type === "guardian") {
-      const newGuardianId = uuidv4();
-      const newGuardian: Guardian = {
-        id: newGuardianId,
+      const { data: newGuardianData, error: guardianError } = await supabase.from('guardians').insert({
         name: data.name,
         email: data.email,
         phone: data.phone,
-        dueDateDay: parseInt(data.dueDateDay, 10) || 10,
-      };
-      const newStudents: Student[] = data.students.map((s: any) => ({
-        id: uuidv4(),
-        name: s.name,
-        class: s.class,
-        cpf: '', // CPF should be added when creating student individually for now
-        guardianId: newGuardianId,
-      }));
-      setGuardians([...guardians, newGuardian]);
-      setStudents([...students, ...newStudents]);
+        due_date_day: parseInt(data.dueDateDay, 10) || 10,
+      }).select().single();
+
+      if (guardianError) {
+        showError("Erro ao adicionar responsável.");
+        return;
+      }
+
+      if (data.students && data.students.length > 0) {
+        const newStudents = data.students.map((s: any) => ({
+          name: s.name,
+          class_name: s.class,
+          guardian_id: newGuardianData.id,
+        }));
+        const { error: studentError } = await supabase.from('students').insert(newStudents);
+        if (studentError) showError("Erro ao vincular alunos ao responsável.");
+      }
+      showSuccess("Responsável adicionado com sucesso!");
     } else if (type === "teacher") {
-      const newTeacher: Teacher = { id: uuidv4(), ...data };
-      setTeachers([...teachers, newTeacher]);
+      const { error } = await supabase.from('teachers').insert({
+        name: data.name,
+        email: data.email,
+        subjects: data.subjects,
+        classes: data.classes,
+      });
+      if (error) showError("Erro ao adicionar professor."); else showSuccess("Professor adicionado com sucesso!");
     }
-    showSuccess("Usuário adicionado com sucesso!");
+    fetchData();
   };
 
   // --- Student Handlers ---
-  const handleEditStudent = (student: Student) => {
-    setEditingStudent(student);
-  };
+  const handleUpdateStudent = async (updatedStudent: Student) => {
+    const { error } = await supabase.from('students').update({
+      name: updatedStudent.name,
+      cpf: updatedStudent.cpf,
+      class_name: updatedStudent.class,
+      guardian_id: updatedStudent.guardianId,
+    }).eq('id', updatedStudent.id);
 
-  const handleUpdateStudent = (updatedStudent: Student) => {
-    setStudents(students.map(s => s.id === updatedStudent.id ? updatedStudent : s));
+    if (error) showError("Erro ao atualizar aluno."); else showSuccess("Aluno atualizado com sucesso!");
     setEditingStudent(null);
-    showSuccess("Aluno atualizado com sucesso!");
+    fetchData();
   };
 
-  const handleDeleteStudent = (studentId: string) => {
-    setDeletingStudentId(studentId);
-  };
-
-  const confirmDeleteStudent = () => {
+  const confirmDeleteStudent = async () => {
     if (deletingStudentId) {
-      setStudents(students.filter((s) => s.id !== deletingStudentId));
+      const { error } = await supabase.from('students').delete().eq('id', deletingStudentId);
+      if (error) showError("Erro ao excluir aluno."); else showSuccess("Aluno excluído com sucesso!");
       setDeletingStudentId(null);
-      showSuccess("Aluno excluído com sucesso!");
+      fetchData();
     }
   };
 
   // --- Guardian Handlers ---
-  const handleEditGuardian = (guardian: Guardian) => {
-    setEditingGuardian(guardian);
-  };
+  const handleUpdateGuardian = async (updatedGuardian: Guardian) => {
+    const { error } = await supabase.from('guardians').update({
+      name: updatedGuardian.name,
+      email: updatedGuardian.email,
+      phone: updatedGuardian.phone,
+      due_date_day: updatedGuardian.dueDateDay,
+    }).eq('id', updatedGuardian.id);
 
-  const handleUpdateGuardian = (updatedGuardian: Guardian) => {
-    setGuardians(guardians.map(g => g.id === updatedGuardian.id ? updatedGuardian : g));
+    if (error) showError("Erro ao atualizar responsável."); else showSuccess("Responsável atualizado com sucesso!");
     setEditingGuardian(null);
-    showSuccess("Responsável atualizado com sucesso!");
+    fetchData();
   };
 
-  const handleDeleteGuardian = (guardianId: string) => {
-    setDeletingGuardianId(guardianId);
-  };
-
-  const confirmDeleteGuardian = () => {
+  const confirmDeleteGuardian = async () => {
     if (deletingGuardianId) {
-      setStudents(students.filter(s => s.guardianId !== deletingGuardianId));
-      setGuardians(guardians.filter((g) => g.id !== deletingGuardianId));
+      const { error } = await supabase.from('guardians').delete().eq('id', deletingGuardianId);
+      if (error) showError("Erro ao excluir responsável."); else showSuccess("Responsável excluído com sucesso!");
       setDeletingGuardianId(null);
-      showSuccess("Responsável e alunos associados foram excluídos com sucesso!");
+      fetchData();
     }
   };
 
   // --- Teacher Handlers ---
-  const handleEditTeacher = (teacher: Teacher) => {
-    setEditingTeacher(teacher);
-  };
+  const handleUpdateTeacher = async (updatedTeacher: Teacher) => {
+    const { error } = await supabase.from('teachers').update({
+      name: updatedTeacher.name,
+      email: updatedTeacher.email,
+      subjects: updatedTeacher.subjects,
+      classes: updatedTeacher.classes,
+    }).eq('id', updatedTeacher.id);
 
-  const handleUpdateTeacher = (updatedTeacher: Teacher) => {
-    setTeachers(teachers.map(t => t.id === updatedTeacher.id ? updatedTeacher : t));
+    if (error) showError("Erro ao atualizar professor."); else showSuccess("Professor atualizado com sucesso!");
     setEditingTeacher(null);
-    showSuccess("Professor atualizado com sucesso!");
+    fetchData();
   };
 
-  const handleDeleteTeacher = (teacherId: string) => {
-    setDeletingTeacherId(teacherId);
-  };
-
-  const confirmDeleteTeacher = () => {
+  const confirmDeleteTeacher = async () => {
     if (deletingTeacherId) {
-      setTeachers(teachers.filter((t) => t.id !== deletingTeacherId));
+      const { error } = await supabase.from('teachers').delete().eq('id', deletingTeacherId);
+      if (error) showError("Erro ao excluir professor."); else showSuccess("Professor excluído com sucesso!");
       setDeletingTeacherId(null);
-      showSuccess("Professor excluído com sucesso!");
+      fetchData();
     }
   };
 
@@ -164,8 +199,8 @@ const UserManagement = () => {
               <StudentsTable
                 students={students}
                 guardians={guardians}
-                onEdit={handleEditStudent}
-                onDelete={handleDeleteStudent}
+                onEdit={setEditingStudent}
+                onDelete={setDeletingStudentId}
               />
             </CardContent>
           </Card>
@@ -180,8 +215,8 @@ const UserManagement = () => {
             <CardContent>
               <GuardiansTable
                 guardians={guardians}
-                onEdit={handleEditGuardian}
-                onDelete={handleDeleteGuardian}
+                onEdit={setEditingGuardian}
+                onDelete={setDeletingGuardianId}
               />
             </CardContent>
           </Card>
@@ -194,7 +229,7 @@ const UserManagement = () => {
               <CardDescription>Lista de todos os professores cadastrados.</CardDescription>
             </CardHeader>
             <CardContent>
-              <TeachersTable teachers={teachers} onEdit={handleEditTeacher} onDelete={handleDeleteTeacher} />
+              <TeachersTable teachers={teachers} onEdit={setEditingTeacher} onDelete={setDeletingTeacherId} />
             </CardContent>
           </Card>
         </TabsContent>
@@ -228,7 +263,7 @@ const UserManagement = () => {
         onOpenChange={(open) => !open && setDeletingGuardianId(null)}
         onConfirm={confirmDeleteGuardian}
         title="Confirmar Exclusão"
-        description="Tem certeza que deseja excluir este responsável? Todos os alunos associados também serão removidos. Esta ação não pode ser desfeita."
+        description="Tem certeza que deseja excluir este responsável? Alunos associados não serão removidos, mas ficarão sem responsável. Esta ação não pode ser desfeita."
       />
 
       <EditTeacherDialog

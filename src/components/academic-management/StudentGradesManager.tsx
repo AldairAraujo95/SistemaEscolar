@@ -11,14 +11,13 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import type { Student, Class, Discipline, Grade } from "@/types";
-import { v4 as uuidv4 } from "uuid";
 
 interface StudentGradesManagerProps {
   students: Student[];
   classes: Class[];
   disciplines: Discipline[];
   grades: Grade[];
-  onGradesChange: (newGrades: Grade[]) => void;
+  onGradesChange: (gradesToUpsert: Grade[]) => void;
 }
 
 export const StudentGradesManager = ({
@@ -56,27 +55,19 @@ export const StudentGradesManager = ({
   const handleSaveGrades = () => {
     if (!selectedStudentId) return;
 
-    let updatedGrades = [...grades];
-
-    disciplines.forEach(discipline => {
+    const gradesToUpsert: Grade[] = disciplines.map(discipline => {
       const gradeValueStr = currentGrades[discipline.id];
       const gradeValue = gradeValueStr ? parseFloat(gradeValueStr) : null;
-      const existingGradeIndex = updatedGrades.findIndex(g => g.studentId === selectedStudentId && g.disciplineId === discipline.id && g.unit === selectedUnit);
+      return {
+        id: '', // ID is not needed for upsert with onConflict
+        studentId: selectedStudentId,
+        disciplineId: discipline.id,
+        grade: isNaN(gradeValue as number) ? null : gradeValue,
+        unit: selectedUnit,
+      };
+    }).filter(g => g.grade !== null); // Only upsert grades that have a value
 
-      if (existingGradeIndex !== -1) {
-        updatedGrades[existingGradeIndex] = { ...updatedGrades[existingGradeIndex], grade: isNaN(gradeValue as number) ? null : gradeValue };
-      } else if (gradeValue !== null && !isNaN(gradeValue)) {
-        updatedGrades.push({
-          id: uuidv4(),
-          studentId: selectedStudentId,
-          disciplineId: discipline.id,
-          grade: gradeValue,
-          unit: selectedUnit,
-        });
-      }
-    });
-
-    onGradesChange(updatedGrades);
+    onGradesChange(gradesToUpsert);
   };
 
   return (

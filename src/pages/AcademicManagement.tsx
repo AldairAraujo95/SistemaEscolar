@@ -1,5 +1,4 @@
-import { useState } from "react";
-import { v4 as uuidv4 } from "uuid";
+import { useState, useEffect, useCallback } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -17,69 +16,100 @@ import { EditDisciplineDialog } from "@/components/academic-management/EditDisci
 import { EditClassDialog } from "@/components/academic-management/EditClassDialog";
 import { DeleteConfirmationDialog } from "@/components/user-management/DeleteConfirmationDialog";
 import { StudentGradesManager } from "@/components/academic-management/StudentGradesManager";
-import { disciplines as initialDisciplines, classes as initialClasses } from "@/data/academic";
-import { students as initialStudents } from "@/data/users";
-import { grades as initialGrades } from "@/data/grades";
 import type { Discipline, Class, Student, Grade } from "@/types";
-import { showSuccess } from "@/utils/toast";
+import { showSuccess, showError } from "@/utils/toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const AcademicManagement = () => {
-  const [disciplines, setDisciplines] = useState<Discipline[]>(initialDisciplines);
-  const [classes, setClasses] = useState<Class[]>(initialClasses);
-  const [students, setStudents] = useState<Student[]>(initialStudents);
-  const [grades, setGrades] = useState<Grade[]>(initialGrades);
+  const [disciplines, setDisciplines] = useState<Discipline[]>([]);
+  const [classes, setClasses] = useState<Class[]>([]);
+  const [students, setStudents] = useState<Student[]>([]);
+  const [grades, setGrades] = useState<Grade[]>([]);
 
   const [editingDiscipline, setEditingDiscipline] = useState<Discipline | null>(null);
   const [deletingDisciplineId, setDeletingDisciplineId] = useState<string | null>(null);
   const [editingClass, setEditingClass] = useState<Class | null>(null);
   const [deletingClassId, setDeletingClassId] = useState<string | null>(null);
 
+  const fetchData = useCallback(async () => {
+    const { data: disciplinesData, error: disciplinesError } = await supabase.from('disciplines').select('*').order('name');
+    const { data: classesData, error: classesError } = await supabase.from('classes').select('*').order('name');
+    const { data: studentsData, error: studentsError } = await supabase.from('students').select('*').order('name');
+    const { data: gradesData, error: gradesError } = await supabase.from('grades').select('*');
+
+    if (disciplinesError || classesError || studentsError || gradesError) {
+      showError("Erro ao carregar dados acadêmicos.");
+    } else {
+      setDisciplines(disciplinesData);
+      setClasses(classesData);
+      setStudents(studentsData.map(s => ({ ...s, class: s.class_name })));
+      setGrades(gradesData);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
   // Discipline Handlers
-  const handleAddDiscipline = (name: string) => {
-    const newDiscipline: Discipline = { id: uuidv4(), name };
-    setDisciplines([...disciplines, newDiscipline]);
-    showSuccess("Disciplina adicionada com sucesso!");
+  const handleAddDiscipline = async (name: string) => {
+    const { error } = await supabase.from('disciplines').insert({ name });
+    if (error) showError("Erro ao adicionar disciplina."); else showSuccess("Disciplina adicionada com sucesso!");
+    fetchData();
   };
 
-  const handleUpdateDiscipline = (updatedDiscipline: Discipline) => {
-    setDisciplines(disciplines.map(d => d.id === updatedDiscipline.id ? updatedDiscipline : d));
+  const handleUpdateDiscipline = async (updatedDiscipline: Discipline) => {
+    const { error } = await supabase.from('disciplines').update({ name: updatedDiscipline.name }).eq('id', updatedDiscipline.id);
+    if (error) showError("Erro ao atualizar disciplina."); else showSuccess("Disciplina atualizada com sucesso!");
     setEditingDiscipline(null);
-    showSuccess("Disciplina atualizada com sucesso!");
+    fetchData();
   };
 
-  const confirmDeleteDiscipline = () => {
+  const confirmDeleteDiscipline = async () => {
     if (deletingDisciplineId) {
-      setDisciplines(disciplines.filter(d => d.id !== deletingDisciplineId));
+      const { error } = await supabase.from('disciplines').delete().eq('id', deletingDisciplineId);
+      if (error) showError("Erro ao excluir disciplina."); else showSuccess("Disciplina excluída com sucesso!");
       setDeletingDisciplineId(null);
-      showSuccess("Disciplina excluída com sucesso!");
+      fetchData();
     }
   };
 
   // Class Handlers
-  const handleAddClass = (name: string) => {
-    const newClass: Class = { id: uuidv4(), name };
-    setClasses([...classes, newClass]);
-    showSuccess("Turma adicionada com sucesso!");
+  const handleAddClass = async (name: string) => {
+    const { error } = await supabase.from('classes').insert({ name });
+    if (error) showError("Erro ao adicionar turma."); else showSuccess("Turma adicionada com sucesso!");
+    fetchData();
   };
 
-  const handleUpdateClass = (updatedClass: Class) => {
-    setClasses(classes.map(c => c.id === updatedClass.id ? updatedClass : c));
+  const handleUpdateClass = async (updatedClass: Class) => {
+    const { error } = await supabase.from('classes').update({ name: updatedClass.name }).eq('id', updatedClass.id);
+    if (error) showError("Erro ao atualizar turma."); else showSuccess("Turma atualizada com sucesso!");
     setEditingClass(null);
-    showSuccess("Turma atualizada com sucesso!");
+    fetchData();
   };
 
-  const confirmDeleteClass = () => {
+  const confirmDeleteClass = async () => {
     if (deletingClassId) {
-      setClasses(classes.filter(c => c.id !== deletingClassId));
+      const { error } = await supabase.from('classes').delete().eq('id', deletingClassId);
+      if (error) showError("Erro ao excluir turma."); else showSuccess("Turma excluída com sucesso!");
       setDeletingClassId(null);
-      showSuccess("Turma excluída com sucesso!");
+      fetchData();
     }
   };
 
   // Grade Handler
-  const handleGradesChange = (newGrades: Grade[]) => {
-    setGrades(newGrades);
-    showSuccess("Notas salvas com sucesso!");
+  const handleGradesChange = async (gradesToUpsert: Grade[]) => {
+    const { error } = await supabase.from('grades').upsert(
+      gradesToUpsert.map(({ id, ...rest }) => rest),
+      { onConflict: 'student_id,discipline_id,unit' }
+    );
+    if (error) {
+      showError("Erro ao salvar as notas.");
+      console.error(error);
+    } else {
+      showSuccess("Notas salvas com sucesso!");
+      fetchData();
+    }
   };
 
   return (

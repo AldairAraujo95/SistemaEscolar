@@ -1,5 +1,4 @@
-import { useState, useMemo } from "react";
-import { v4 as uuidv4 } from "uuid";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { format, isSameDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Calendar } from "@/components/ui/calendar";
@@ -9,18 +8,31 @@ import { Badge } from "@/components/ui/badge";
 import { PlusCircle, Edit, Trash2 } from "lucide-react";
 import { EventDialog } from "@/components/calendar/EventDialog";
 import { DeleteConfirmationDialog } from "@/components/user-management/DeleteConfirmationDialog";
-import { initialEvents } from "@/data/calendar";
 import type { CalendarEvent } from "@/types";
-import { showSuccess } from "@/utils/toast";
+import { showSuccess, showError } from "@/utils/toast";
 import { useAuth } from "@/context/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 const SchoolCalendar = () => {
   const { role } = useAuth();
-  const [events, setEvents] = useState<CalendarEvent[]>(initialEvents);
+  const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<Partial<CalendarEvent> | null>(null);
   const [deletingEventId, setDeletingEventId] = useState<string | null>(null);
+
+  const fetchEvents = useCallback(async () => {
+    const { data, error } = await supabase.from('calendar_events').select('*').order('date');
+    if (error) {
+      showError("Erro ao carregar eventos.");
+    } else {
+      setEvents(data.map(e => ({ ...e, date: new Date(e.date) })));
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchEvents();
+  }, [fetchEvents]);
 
   const eventsForSelectedDay = useMemo(() => {
     return selectedDate
@@ -38,31 +50,31 @@ const SchoolCalendar = () => {
     setIsDialogOpen(true);
   };
 
-  const handleSaveEvent = (eventData: Partial<CalendarEvent>) => {
+  const handleSaveEvent = async (eventData: Partial<CalendarEvent>) => {
+    const dataToSave = {
+      title: eventData.title!,
+      date: format(eventData.date!, 'yyyy-MM-dd'),
+      description: eventData.description!,
+      type: eventData.type!,
+    };
+
     if (eventData.id) {
-      // Update existing event
-      setEvents(events.map(e => e.id === eventData.id ? { ...e, ...eventData } as CalendarEvent : e));
-      showSuccess("Evento atualizado com sucesso!");
+      const { error } = await supabase.from('calendar_events').update(dataToSave).eq('id', eventData.id);
+      if (error) showError("Erro ao atualizar evento."); else showSuccess("Evento atualizado com sucesso!");
     } else {
-      // Create new event
-      const newEvent: CalendarEvent = {
-        id: uuidv4(),
-        title: eventData.title!,
-        date: eventData.date!,
-        description: eventData.description!,
-        type: eventData.type!,
-      };
-      setEvents([...events, newEvent]);
-      showSuccess("Evento adicionado com sucesso!");
+      const { error } = await supabase.from('calendar_events').insert(dataToSave);
+      if (error) showError("Erro ao adicionar evento."); else showSuccess("Evento adicionado com sucesso!");
     }
     setEditingEvent(null);
+    fetchEvents();
   };
 
-  const confirmDeleteEvent = () => {
+  const confirmDeleteEvent = async () => {
     if (deletingEventId) {
-      setEvents(events.filter(e => e.id !== deletingEventId));
+      const { error } = await supabase.from('calendar_events').delete().eq('id', deletingEventId);
+      if (error) showError("Erro ao excluir evento."); else showSuccess("Evento excluído com sucesso!");
       setDeletingEventId(null);
-      showSuccess("Evento excluído com sucesso!");
+      fetchEvents();
     }
   };
 

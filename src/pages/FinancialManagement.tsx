@@ -24,7 +24,6 @@ import { AddBoletoDialog } from "@/components/financial-management/AddBoletoDial
 import { BatchBoletoDialog } from "@/components/financial-management/BatchBoletoDialog";
 import { FinancialChart } from "@/components/financial-management/FinancialChart";
 import { DeleteConfirmationDialog } from "@/components/user-management/DeleteConfirmationDialog";
-import { guardians as initialGuardians } from "@/data/users";
 import type { Boleto, Guardian } from "@/types";
 import { showSuccess, showError } from "@/utils/toast";
 import { useAuth } from "@/context/AuthContext";
@@ -36,23 +35,27 @@ const LOGGED_IN_GUARDIAN_ID = "g1";
 const FinancialManagement = () => {
   const { role } = useAuth();
   const [boletos, setBoletos] = useState<Boleto[]>([]);
-  const [guardians] = useState<Guardian[]>(initialGuardians);
+  const [guardians, setGuardians] = useState<Guardian[]>([]);
   const [selectedGuardian, setSelectedGuardian] = useState<string>("all");
   const [selectedStatus, setSelectedStatus] = useState<Boleto['status'] | 'all'>('all');
   const [editingBoleto, setEditingBoleto] = useState<Boleto | null>(null);
   const [deletingBoleto, setDeletingBoleto] = useState<Boleto | null>(null);
 
-  const fetchBoletos = useCallback(async () => {
-    const { data, error } = await supabase
+  const fetchData = useCallback(async () => {
+    const { data: boletosData, error: boletosError } = await supabase
       .from('boletos')
       .select('*')
       .order('created_at', { ascending: false });
 
-    if (error) {
-      showError("Erro ao buscar boletos.");
-      console.error(error);
+    const { data: guardiansData, error: guardiansError } = await supabase
+      .from('guardians')
+      .select('*')
+      .order('name');
+
+    if (boletosError || guardiansError) {
+      showError("Erro ao buscar dados financeiros.");
     } else {
-      const formattedData = data.map(item => ({
+      const formattedBoletos = boletosData.map(item => ({
         id: item.id,
         guardianId: item.guardian_id,
         amount: item.amount,
@@ -60,13 +63,14 @@ const FinancialManagement = () => {
         status: item.status as Boleto['status'],
         filePath: item.file_path,
       }));
-      setBoletos(formattedData);
+      setBoletos(formattedBoletos);
+      setGuardians(guardiansData.map(g => ({ ...g, dueDateDay: g.due_date_day })));
     }
   }, []);
 
   useEffect(() => {
-    fetchBoletos();
-  }, [fetchBoletos]);
+    fetchData();
+  }, [fetchData]);
 
   const visibleBoletos = useMemo(() => {
     if (role === 'aluno') {
@@ -129,7 +133,7 @@ const FinancialManagement = () => {
       showError("Erro ao atualizar o boleto.");
     } else {
       showSuccess("Status do boleto atualizado com sucesso!");
-      fetchBoletos();
+      fetchData();
     }
     setEditingBoleto(null);
   };
@@ -164,7 +168,7 @@ const FinancialManagement = () => {
       console.error(insertError);
     } else {
       showSuccess("Boleto adicionado com sucesso!");
-      fetchBoletos();
+      fetchData();
     }
   };
 
@@ -199,7 +203,7 @@ const FinancialManagement = () => {
       console.error(error);
     } else {
       showSuccess(`${boletosToInsert.length} boleto(s) gerado(s) com sucesso!`);
-      fetchBoletos();
+      fetchData();
     }
   };
 
@@ -227,8 +231,7 @@ const FinancialManagement = () => {
       showError("Erro ao excluir o boleto.");
     } else {
       showSuccess("Boleto excluído com sucesso!");
-      // Atualiza o estado local para refletir a exclusão imediatamente
-      setBoletos(prevBoletos => prevBoletos.filter(b => b.id !== deletingBoleto.id));
+      fetchData();
     }
     setDeletingBoleto(null);
   };

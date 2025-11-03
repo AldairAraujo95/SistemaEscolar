@@ -1,43 +1,69 @@
-import { useState, useMemo } from "react";
-import { v4 as uuidv4 } from "uuid";
+import { useState, useMemo, useEffect, useCallback } from "react";
+import { format } from "date-fns";
 import { AddActivityForm } from "@/components/activity-feed/AddActivityForm";
 import { ActivityList } from "@/components/activity-feed/ActivityList";
-import { classes as initialClasses, disciplines as initialDisciplines } from "@/data/academic";
-import { students as initialStudents } from "@/data/users";
-import { initialActivities } from "@/data/activities";
-import type { Activity, Class, Discipline } from "@/types";
-import { showSuccess } from "@/utils/toast";
+import type { Activity, Class, Discipline, Student } from "@/types";
+import { showSuccess, showError } from "@/utils/toast";
 import { useAuth } from "@/context/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 // Simula o aluno logado
-const LOGGED_IN_STUDENT_ID = "s1";
+const LOGGED_IN_STUDENT_ID = "s1"; // This should be replaced with actual logged-in user logic
 
 const ActivityFeed = () => {
   const { role } = useAuth();
-  const [activities, setActivities] = useState<Activity[]>(initialActivities);
-  const [classes] = useState<Class[]>(initialClasses);
-  const [disciplines] = useState<Discipline[]>(initialDisciplines);
+  const [activities, setActivities] = useState<Activity[]>([]);
+  const [classes, setClasses] = useState<Class[]>([]);
+  const [disciplines, setDisciplines] = useState<Discipline[]>([]);
+  const [students, setStudents] = useState<Student[]>([]);
 
-  const handleAddActivity = (activityData: { classId: string; disciplineId: string; description: string; dueDate: Date }) => {
-    const newActivity: Activity = {
-      id: uuidv4(),
-      ...activityData,
-    };
-    setActivities([newActivity, ...activities]);
-    showSuccess("Atividade postada com sucesso!");
+  const fetchData = useCallback(async () => {
+    const { data: activitiesData, error: activitiesError } = await supabase.from('activities').select('*').order('due_date', { ascending: false });
+    const { data: classesData, error: classesError } = await supabase.from('classes').select('*');
+    const { data: disciplinesData, error: disciplinesError } = await supabase.from('disciplines').select('*');
+    const { data: studentsData, error: studentsError } = await supabase.from('students').select('*');
+
+    if (activitiesError || classesError || disciplinesError || studentsError) {
+      showError("Erro ao carregar dados do feed.");
+    } else {
+      setActivities(activitiesData.map(a => ({ ...a, dueDate: new Date(a.due_date) })));
+      setClasses(classesData);
+      setDisciplines(disciplinesData);
+      setStudents(studentsData.map(s => ({ ...s, class: s.class_name })));
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  const handleAddActivity = async (activityData: { classId: string; disciplineId: string; description: string; dueDate: Date }) => {
+    const { error } = await supabase.from('activities').insert({
+      class_id: activityData.classId,
+      discipline_id: activityData.disciplineId,
+      description: activityData.description,
+      due_date: format(activityData.dueDate, 'yyyy-MM-dd'),
+    });
+
+    if (error) {
+      showError("Erro ao postar atividade.");
+    } else {
+      showSuccess("Atividade postada com sucesso!");
+      fetchData();
+    }
   };
 
   const visibleActivities = useMemo(() => {
     if (role === 'aluno') {
-      const student = initialStudents.find(s => s.id === LOGGED_IN_STUDENT_ID);
-      const studentClass = initialClasses.find(c => c.name === student?.class);
+      const student = students.find(s => s.id === LOGGED_IN_STUDENT_ID);
+      const studentClass = classes.find(c => c.name === student?.class);
       if (studentClass) {
         return activities.filter(a => a.classId === studentClass.id);
       }
       return [];
     }
     return activities;
-  }, [activities, role]);
+  }, [activities, role, students, classes]);
 
   return (
     <div className="space-y-6">

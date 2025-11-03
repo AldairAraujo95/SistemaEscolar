@@ -3,94 +3,97 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Users, BookOpen, DollarSign, Calendar, Activity } from "lucide-react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { students, guardians, teachers } from "@/data/users";
-import { classes } from "@/data/academic";
-import { initialEvents } from "@/data/calendar";
-import { initialActivities } from "@/data/activities";
 import type { Boleto } from "@/types";
 
 const Dashboard = () => {
-  const [boletos, setBoletos] = useState<Boleto[]>([]);
+  const [stats, setStats] = useState({
+    users: 0,
+    classes: 0,
+    pendingAmount: 0,
+    events: 0,
+    activities: 0,
+  });
 
-  const fetchBoletos = useCallback(async () => {
-    const { data, error } = await supabase.from('boletos').select('*');
-    if (error) {
-      console.error("Erro ao buscar boletos:", error);
+  const fetchDashboardData = useCallback(async () => {
+    // Fetch counts
+    const { count: usersCount } = await supabase.from('students').select('*', { count: 'exact', head: true });
+    const { count: guardiansCount } = await supabase.from('guardians').select('*', { count: 'exact', head: true });
+    const { count: teachersCount } = await supabase.from('teachers').select('*', { count: 'exact', head: true });
+    const { count: classesCount } = await supabase.from('classes').select('*', { count: 'exact', head: true });
+    const { count: eventsCount } = await supabase.from('calendar_events').select('*', { count: 'exact', head: true });
+    const { count: activitiesCount } = await supabase.from('activities').select('*', { count: 'exact', head: true });
+
+    // Fetch financial data
+    const { data: boletosData, error: boletosError } = await supabase
+      .from('boletos')
+      .select('amount, status');
+
+    if (boletosError) {
+      console.error("Erro ao buscar boletos:", boletosError);
     } else {
-      const formattedData = data.map(item => ({
-        id: item.id,
-        guardianId: item.guardian_id,
-        amount: item.amount,
-        dueDate: item.due_date,
-        status: item.status as Boleto['status'],
-        filePath: item.file_path,
-      }));
-      setBoletos(formattedData);
+      const totalPendingAmount = boletosData
+        .filter(b => b.status === 'a vencer' || b.status === 'vencido')
+        .reduce((sum, boleto) => sum + boleto.amount, 0);
+
+      setStats({
+        users: (usersCount ?? 0) + (guardiansCount ?? 0) + (teachersCount ?? 0),
+        classes: classesCount ?? 0,
+        pendingAmount: totalPendingAmount,
+        events: eventsCount ?? 0,
+        activities: activitiesCount ?? 0,
+      });
     }
   }, []);
 
   useEffect(() => {
-    // Fetch initial data
-    fetchBoletos();
+    fetchDashboardData();
 
-    // Set up a real-time subscription to the 'boletos' table
     const channel = supabase
-      .channel('dashboard-boletos-realtime-channel') // Using a unique and descriptive channel name
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'boletos' },
-        () => {
-          // When any change occurs, refetch the data to update the dashboard
-          fetchBoletos();
-        }
-      )
+      .channel('dashboard-realtime-channel')
+      .on('postgres_changes', { event: '*', schema: 'public' }, () => {
+        fetchDashboardData();
+      })
       .subscribe();
 
-    // Clean up the subscription when the component unmounts
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [fetchBoletos]);
-
-  const totalUsers = students.length + guardians.length + teachers.length;
-  const totalPendingAmount = boletos
-    .filter(b => b.status === 'a vencer' || b.status === 'vencido')
-    .reduce((sum, boleto) => sum + boleto.amount, 0);
+  }, [fetchDashboardData]);
 
   const summaryCards = [
     {
       title: "Gestão de Usuários",
       description: "Alunos, Pais e Professores",
       icon: <Users className="h-6 w-6 text-gray-500" />,
-      value: `${totalUsers} Usuários`,
+      value: `${stats.users} Usuários`,
       link: "/admin/users",
     },
     {
       title: "Gestão Acadêmica",
       description: "Turmas e Disciplinas",
       icon: <BookOpen className="h-6 w-6 text-gray-500" />,
-      value: `${classes.length} Turmas`,
+      value: `${stats.classes} Turmas`,
       link: "/admin/academic",
     },
     {
       title: "Gestão Financeira",
       description: "Total a receber",
       icon: <DollarSign className="h-6 w-6 text-gray-500" />,
-      value: totalPendingAmount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }),
+      value: stats.pendingAmount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }),
       link: "/admin/financial",
     },
     {
       title: "Agenda Escolar",
       description: "Próximos Eventos",
       icon: <Calendar className="h-6 w-6 text-gray-500" />,
-      value: `${initialEvents.length} Eventos`,
+      value: `${stats.events} Eventos`,
       link: "/admin/calendar",
     },
     {
       title: "Feed de Atividades",
       description: "Últimas Postagens",
       icon: <Activity className="h-6 w-6 text-gray-500" />,
-      value: `${initialActivities.length} Postagens`,
+      value: `${stats.activities} Postagens`,
       link: "/admin/feed",
     },
   ];

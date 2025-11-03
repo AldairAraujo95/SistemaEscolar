@@ -65,7 +65,12 @@ const UserManagement = () => {
         class_name: data.class,
         guardian_id: data.guardianId,
       });
-      if (error) showError("Erro ao adicionar aluno."); else showSuccess("Aluno adicionado com sucesso!");
+      if (error) {
+        showError("Erro ao adicionar aluno.");
+        console.error(error);
+      } else {
+        showSuccess("Aluno adicionado com sucesso!");
+      }
     } else if (type === "guardian") {
       const { data: newGuardianData, error: guardianError } = await supabase.from('guardians').insert({
         name: data.name,
@@ -76,17 +81,21 @@ const UserManagement = () => {
 
       if (guardianError) {
         showError("Erro ao adicionar responsável.");
+        console.error(guardianError);
         return;
       }
 
-      if (data.students && data.students.length > 0) {
+      if (newGuardianData && data.students && data.students.length > 0) {
         const newStudents = data.students.map((s: any) => ({
           name: s.name,
           class_name: s.class,
           guardian_id: newGuardianData.id,
         }));
         const { error: studentError } = await supabase.from('students').insert(newStudents);
-        if (studentError) showError("Erro ao vincular alunos ao responsável.");
+        if (studentError) {
+          showError("Erro ao vincular alunos ao responsável.");
+          console.error(studentError);
+        }
       }
       showSuccess("Responsável adicionado com sucesso!");
     } else if (type === "teacher") {
@@ -96,7 +105,12 @@ const UserManagement = () => {
         subjects: data.subjects,
         classes: data.classes,
       });
-      if (error) showError("Erro ao adicionar professor."); else showSuccess("Professor adicionado com sucesso!");
+      if (error) {
+        showError("Erro ao adicionar professor.");
+        console.error(error);
+      } else {
+        showSuccess("Professor adicionado com sucesso!");
+      }
     }
     fetchData();
   };

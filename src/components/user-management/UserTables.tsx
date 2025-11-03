@@ -24,7 +24,8 @@ interface StudentsTableProps {
 }
 
 export const StudentsTable = ({ students, guardians, onEdit, onDelete }: StudentsTableProps) => {
-  const getGuardianName = (guardianId: string) => {
+  const getGuardianName = (guardianId: string | null) => {
+    if (!guardianId) return "N/A";
     return guardians.find((g) => g.id === guardianId)?.name || "N/A";
   };
 
@@ -43,9 +44,9 @@ export const StudentsTable = ({ students, guardians, onEdit, onDelete }: Student
         {students.map((student) => (
           <TableRow key={student.id}>
             <TableCell className="font-medium">{student.name}</TableCell>
-            <TableCell>{student.cpf}</TableCell>
+            <TableCell>{student.cpf || 'N/A'}</TableCell>
             <TableCell>{getGuardianName(student.guardianId)}</TableCell>
-            <TableCell>{student.class}</TableCell>
+            <TableCell>{student.class || 'N/A'}</TableCell>
             <TableCell className="text-right">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -92,8 +93,8 @@ export const GuardiansTable = ({ guardians, onEdit, onDelete }: GuardiansTablePr
       {guardians.map((guardian) => (
         <TableRow key={guardian.id}>
           <TableCell className="font-medium">{guardian.name}</TableCell>
-          <TableCell>{guardian.email}</TableCell>
-          <TableCell>{guardian.phone}</TableCell>
+          <TableCell>{guardian.email || 'N/A'}</TableCell>
+          <TableCell>{guardian.phone || 'N/A'}</TableCell>
           <TableCell className="text-right">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -140,9 +141,9 @@ export const TeachersTable = ({ teachers, onEdit, onDelete }: TeachersTableProps
       {teachers.map((teacher) => (
         <TableRow key={teacher.id}>
           <TableCell className="font-medium">{teacher.name}</TableCell>
-          <TableCell>{teacher.email}</TableCell>
-          <TableCell>{teacher.subjects.join(", ")}</TableCell>
-          <TableCell>{teacher.classes.join(", ")}</TableCell>
+          <TableCell>{teacher.email || 'N/A'}</TableCell>
+          <TableCell>{(teacher.subjects || []).join(", ") || 'N/A'}</TableCell>
+          <TableCell>{(teacher.classes || []).join(", ") || 'N/A'}</TableCell>
           <TableCell className="text-right">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

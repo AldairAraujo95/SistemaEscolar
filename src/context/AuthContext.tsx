@@ -16,6 +16,11 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Manually define the key used by Supabase to store the auth token.
+// This makes the logout process more robust.
+const SUPABASE_PROJECT_REF = "iymefizdnhhvulttjjrz";
+const AUTH_TOKEN_KEY = `sb-${SUPABASE_PROJECT_REF}-auth-token`;
+
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
@@ -85,12 +90,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const logout = async () => {
-    await supabase.auth.signOut();
-    // Manually clear state to prevent race conditions
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+        console.error("Error during sign out:", error);
+    }
+    // Force clear local storage to ensure session is terminated completely
+    localStorage.removeItem(AUTH_TOKEN_KEY);
+    localStorage.removeItem('userRole');
+    
+    // Clear React state as a final measure
     setSession(null);
     setUser(null);
     setProfile(null);
-    handleSetRole(null);
+    setRole(null);
   };
 
   const value = {

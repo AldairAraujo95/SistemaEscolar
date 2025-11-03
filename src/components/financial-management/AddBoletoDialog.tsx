@@ -18,11 +18,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
-import { Calendar as CalendarIcon } from "lucide-react";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import type { Guardian } from "@/types";
 
 interface AddBoletoDialogProps {
@@ -34,12 +29,28 @@ export const AddBoletoDialog = ({ guardians, onSave }: AddBoletoDialogProps) => 
   const [open, setOpen] = useState(false);
   const [guardianId, setGuardianId] = useState("");
   const [amount, setAmount] = useState("");
-  const [dueDate, setDueDate] = useState<Date | undefined>();
   const [file, setFile] = useState<File | null>(null);
-  const [isDatePickerOpen, setDatePickerOpen] = useState(false);
+
+  const currentYear = new Date().getFullYear();
+  const [day, setDay] = useState("");
+  const [month, setMonth] = useState<number>(new Date().getMonth() + 1);
+  const [year, setYear] = useState<number>(currentYear);
+
+  const months = [
+    { value: 1, label: "Jan" }, { value: 2, label: "Fev" },
+    { value: 3, label: "Mar" }, { value: 4, label: "Abr" },
+    { value: 5, label: "Mai" }, { value: 6, label: "Jun" },
+    { value: 7, label: "Jul" }, { value: 8, label: "Ago" },
+    { value: 9, label: "Set" }, { value: 10, label: "Out" },
+    { value: 11, label: "Nov" }, { value: 12, label: "Dez" },
+  ];
+
+  const years = Array.from({ length: 5 }, (_, i) => currentYear + i);
 
   const handleSave = () => {
-    if (guardianId && amount && dueDate && file) {
+    if (guardianId && amount && day && month && year && file) {
+      // Using UTC to avoid timezone issues
+      const dueDate = new Date(Date.UTC(year, month - 1, parseInt(day)));
       onSave({
         guardianId,
         amount: parseFloat(amount),
@@ -48,15 +59,10 @@ export const AddBoletoDialog = ({ guardians, onSave }: AddBoletoDialogProps) => 
       });
       setGuardianId("");
       setAmount("");
-      setDueDate(undefined);
+      setDay("");
       setFile(null);
       setOpen(false);
     }
-  };
-
-  const handleDateSelect = (date: Date | undefined) => {
-    setDueDate(date);
-    setDatePickerOpen(false);
   };
 
   return (
@@ -103,28 +109,44 @@ export const AddBoletoDialog = ({ guardians, onSave }: AddBoletoDialogProps) => 
             />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="due-date" className="text-right">
+            <Label htmlFor="due-date-day" className="text-right">
               Vencimento
             </Label>
-            <Popover open={isDatePickerOpen} onOpenChange={setDatePickerOpen}>
-              <PopoverTrigger asChild>
-                <Button
-                  variant={"outline"}
-                  className="col-span-3 justify-start text-left font-normal"
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {dueDate ? format(dueDate, "PPP", { locale: ptBR }) : <span>Escolha uma data</span>}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
-                <Calendar
-                  mode="single"
-                  selected={dueDate}
-                  onSelect={handleDateSelect}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
+            <div className="col-span-3 grid grid-cols-3 gap-2">
+              <Input
+                id="due-date-day"
+                type="number"
+                placeholder="Dia"
+                value={day}
+                onChange={(e) => setDay(e.target.value)}
+                min="1"
+                max="31"
+              />
+              <Select value={String(month)} onValueChange={(value) => setMonth(parseInt(value))}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Mês" />
+                </SelectTrigger>
+                <SelectContent>
+                  {months.map((m) => (
+                    <SelectItem key={m.value} value={String(m.value)}>
+                      {m.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={String(year)} onValueChange={(value) => setYear(parseInt(value))}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Ano" />
+                </SelectTrigger>
+                <SelectContent>
+                  {years.map((y) => (
+                    <SelectItem key={y} value={String(y)}>
+                      {y}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="file" className="text-right">
@@ -141,7 +163,7 @@ export const AddBoletoDialog = ({ guardians, onSave }: AddBoletoDialogProps) => 
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
-          <Button onClick={handleSave} disabled={!guardianId || !amount || !dueDate || !file}>Salvar</Button>
+          <Button onClick={handleSave} disabled={!guardianId || !amount || !day || !file}>Salvar</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -17,27 +17,53 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { MoreHorizontal, Edit, TrendingUp, TrendingDown, CircleDollarSign } from "lucide-react";
+import { MoreHorizontal, Edit, TrendingUp, TrendingDown, CircleDollarSign, Download } from "lucide-react";
 import { StatusBadge } from "@/components/financial-management/StatusBadge";
 import { EditBoletoDialog } from "@/components/financial-management/EditBoletoDialog";
 import { AddBoletoDialog } from "@/components/financial-management/AddBoletoDialog";
 import { FinancialChart } from "@/components/financial-management/FinancialChart";
-import { boletos as initialBoletos } from "@/data/financial";
 import { guardians as initialGuardians } from "@/data/users";
 import type { Boleto, Guardian } from "@/types";
-import { showSuccess } from "@/utils/toast";
+import { showSuccess, showError } from "@/utils/toast";
 import { useAuth } from "@/context/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 // Simula o responsável logado
 const LOGGED_IN_GUARDIAN_ID = "g1";
 
 const FinancialManagement = () => {
   const { role } = useAuth();
-  const [boletos, setBoletos] = useState<Boleto[]>(initialBoletos);
+  const [boletos, setBoletos] = useState<Boleto[]>([]);
   const [guardians] = useState<Guardian[]>(initialGuardians);
   const [selectedGuardian, setSelectedGuardian] = useState<string>("all");
   const [selectedStatus, setSelectedStatus] = useState<Boleto['status'] | 'all'>('all');
   const [editingBoleto, setEditingBoleto] = useState<Boleto | null>(null);
+
+  const fetchBoletos = useCallback(async () => {
+    const { data, error } = await supabase
+      .from('boletos')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      showError("Erro ao buscar boletos.");
+      console.error(error);
+    } else {
+      const formattedData = data.map(item => ({
+        id: item.id,
+        guardianId: item.guardian_id,
+        amount: item.amount,
+        dueDate: item.due_date,
+        status: item.status as Boleto['status'],
+        filePath: item.file_path,
+      }));
+      setBoletos(formattedData);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchBoletos();
+  }, [fetchBoletos]);
 
   const visibleBoletos = useMemo(() => {
     if (role === 'aluno') {
@@ -90,22 +116,70 @@ const FinancialManagement = () => {
     return filtered;
   }, [visibleBoletos, selectedGuardian, selectedStatus, role]);
 
-  const handleUpdateBoleto = (updatedBoleto: Boleto) => {
-    setBoletos(boletos.map(b => b.id === updatedBoleto.id ? updatedBoleto : b));
+  const handleUpdateBoleto = async (updatedBoleto: Boleto) => {
+    const { error } = await supabase
+      .from('boletos')
+      .update({ status: updatedBoleto.status })
+      .eq('id', updatedBoleto.id);
+
+    if (error) {
+      showError("Erro ao atualizar o boleto.");
+    } else {
+      showSuccess("Status do boleto atualizado com sucesso!");
+      fetchBoletos();
+    }
     setEditingBoleto(null);
-    showSuccess("Status do boleto atualizado com sucesso!");
   };
 
-  const handleAddBoleto = (data: { guardianId: string; amount: number; dueDate: Date }) => {
-    const newBoleto: Boleto = {
-      id: uuidv4(),
-      guardianId: data.guardianId,
+  const handleAddBoleto = async (data: { guardianId: string; amount: number; dueDate: Date; file: File | null }) => {
+    if (!data.file) {
+      showError("Nenhum arquivo selecionado.");
+      return;
+    }
+
+    const filePath = `${data.guardianId}/${uuidv4()}-${data.file.name}`;
+    const { error: uploadError } = await supabase.storage
+      .from('boletos')
+      .upload(filePath, data.file);
+
+    if (uploadError) {
+      showError("Erro ao fazer upload do arquivo.");
+      console.error(uploadError);
+      return;
+    }
+
+    const { error: insertError } = await supabase.from('boletos').insert({
+      guardian_id: data.guardianId,
       amount: data.amount,
-      dueDate: data.dueDate.toISOString().split('T')[0], // Formato YYYY-MM-DD
+      due_date: data.dueDate.toISOString().split('T')[0],
       status: 'a vencer',
-    };
-    setBoletos([newBoleto, ...boletos]);
-    showSuccess("Boleto adicionado com sucesso!");
+      file_path: filePath,
+    });
+
+    if (insertError) {
+      showError("Erro ao adicionar o boleto.");
+      console.error(insertError);
+    } else {
+      showSuccess("Boleto adicionado com sucesso!");
+      fetchBoletos();
+    }
+  };
+
+  const handleDownload = async (filePath: string) => {
+    const { data, error } = await supabase.storage.from('boletos').download(filePath);
+    if (error) {
+      showError("Erro ao baixar o arquivo.");
+      console.error(error);
+      return;
+    }
+    const url = URL.createObjectURL(data);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filePath.split('/').pop() || 'boleto.pdf';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -205,6 +279,7 @@ const FinancialManagement = () => {
                   <TableHead>Vencimento</TableHead>
                   <TableHead>Valor</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Arquivo</TableHead>
                   {role !== 'aluno' && <TableHead className="text-right">Ações</TableHead>}
                 </TableRow>
               </TableHeader>
@@ -215,6 +290,15 @@ const FinancialManagement = () => {
                     <TableCell>{new Date(boleto.dueDate).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}</TableCell>
                     <TableCell>{boleto.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</TableCell>
                     <TableCell><StatusBadge status={boleto.status} /></TableCell>
+                    <TableCell>
+                      {boleto.filePath ? (
+                        <Button variant="outline" size="icon" onClick={() => handleDownload(boleto.filePath!)}>
+                          <Download className="h-4 w-4" />
+                        </Button>
+                      ) : (
+                        "-"
+                      )}
+                    </TableCell>
                     {role !== 'aluno' && (
                       <TableCell className="text-right">
                         <DropdownMenu>

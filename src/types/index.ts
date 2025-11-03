@@ -46,6 +46,7 @@ export interface Boleto {
   amount: number;
   dueDate: string; // Formato YYYY-MM-DD
   status: 'pago' | 'a vencer' | 'vencido';
+  filePath?: string | null;
 }
 
 export interface CalendarEvent {

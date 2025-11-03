@@ -27,7 +27,7 @@ import type { Guardian } from "@/types";
 
 interface AddBoletoDialogProps {
   guardians: Guardian[];
-  onSave: (data: { guardianId: string; amount: number; dueDate: Date }) => void;
+  onSave: (data: { guardianId: string; amount: number; dueDate: Date; file: File | null }) => void;
 }
 
 export const AddBoletoDialog = ({ guardians, onSave }: AddBoletoDialogProps) => {
@@ -35,17 +35,20 @@ export const AddBoletoDialog = ({ guardians, onSave }: AddBoletoDialogProps) => 
   const [guardianId, setGuardianId] = useState("");
   const [amount, setAmount] = useState("");
   const [dueDate, setDueDate] = useState<Date | undefined>();
+  const [file, setFile] = useState<File | null>(null);
 
   const handleSave = () => {
-    if (guardianId && amount && dueDate) {
+    if (guardianId && amount && dueDate && file) {
       onSave({
         guardianId,
         amount: parseFloat(amount),
         dueDate,
+        file,
       });
       setGuardianId("");
       setAmount("");
       setDueDate(undefined);
+      setFile(null);
       setOpen(false);
     }
   };
@@ -117,10 +120,22 @@ export const AddBoletoDialog = ({ guardians, onSave }: AddBoletoDialogProps) => 
               </PopoverContent>
             </Popover>
           </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="file" className="text-right">
+              Arquivo
+            </Label>
+            <Input
+              id="file"
+              type="file"
+              accept="application/pdf"
+              onChange={(e) => setFile(e.target.files ? e.target.files[0] : null)}
+              className="col-span-3"
+            />
+          </div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
-          <Button onClick={handleSave}>Salvar</Button>
+          <Button onClick={handleSave} disabled={!guardianId || !amount || !dueDate || !file}>Salvar</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

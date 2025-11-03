@@ -7,11 +7,8 @@ import { showSuccess, showError } from "@/utils/toast";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 
-// Simula o aluno logado
-const LOGGED_IN_STUDENT_ID = "s1"; // This should be replaced with actual logged-in user logic
-
 const ActivityFeed = () => {
-  const { role } = useAuth();
+  const { role, user } = useAuth();
   const [activities, setActivities] = useState<Activity[]>([]);
   const [classes, setClasses] = useState<Class[]>([]);
   const [disciplines, setDisciplines] = useState<Discipline[]>([]);
@@ -26,10 +23,10 @@ const ActivityFeed = () => {
     if (activitiesError || classesError || disciplinesError || studentsError) {
       showError("Erro ao carregar dados do feed.");
     } else {
-      setActivities(activitiesData.map(a => ({ ...a, dueDate: new Date(a.due_date) })));
+      setActivities(activitiesData.map(a => ({ ...a, dueDate: new Date(a.due_date), classId: a.class_id, disciplineId: a.discipline_id })));
       setClasses(classesData);
       setDisciplines(disciplinesData);
-      setStudents(studentsData.map(s => ({ ...s, class: s.class_name })));
+      setStudents(studentsData.map(s => ({ ...s, class: s.class_name, guardianId: s.guardian_id })));
     }
   }, []);
 
@@ -54,16 +51,25 @@ const ActivityFeed = () => {
   };
 
   const visibleActivities = useMemo(() => {
-    if (role === 'aluno') {
-      const student = students.find(s => s.id === LOGGED_IN_STUDENT_ID);
-      const studentClass = classes.find(c => c.name === student?.class);
-      if (studentClass) {
-        return activities.filter(a => a.classId === studentClass.id);
+    if (role === 'aluno' && user) {
+      // Find students linked to the logged-in guardian
+      const myStudents = students.filter(s => s.guardianId === user.id);
+      if (myStudents.length > 0) {
+        // Get the class names of all linked students
+        const studentClassNames = myStudents.map(s => s.class).filter((c): c is string => !!c);
+        
+        // Get the class IDs from the class names
+        const studentClassIds = classes
+          .filter(c => studentClassNames.includes(c.name))
+          .map(c => c.id);
+        
+        // Filter activities that belong to any of the student's classes
+        return activities.filter(a => studentClassIds.includes(a.classId));
       }
       return [];
     }
     return activities;
-  }, [activities, role, students, classes]);
+  }, [activities, role, user, students, classes]);
 
   return (
     <div className="space-y-6">

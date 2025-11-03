@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import { MadeWithDyad } from "../made-with-dyad";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
+import { DeveloperCredit } from "../DeveloperCredit";
 
 const AlunoSidebar = () => {
   const { logout } = useAuth();
@@ -53,6 +54,7 @@ const AlunoSidebar = () => {
         </Button>
       </div>
       <div className="mt-auto">
+        <DeveloperCredit />
         <MadeWithDyad />
       </div>
     </aside>

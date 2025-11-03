@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Users, BookOpen, DollarSign, Calendar, Activity } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -12,25 +12,37 @@ import type { Boleto } from "@/types";
 const Dashboard = () => {
   const [boletos, setBoletos] = useState<Boleto[]>([]);
 
-  useEffect(() => {
-    const fetchBoletos = async () => {
-      const { data, error } = await supabase.from('boletos').select('*');
-      if (error) {
-        console.error("Erro ao buscar boletos:", error);
-      } else {
-        const formattedData = data.map(item => ({
-          id: item.id,
-          guardianId: item.guardian_id,
-          amount: item.amount,
-          dueDate: item.due_date,
-          status: item.status as Boleto['status'],
-          filePath: item.file_path,
-        }));
-        setBoletos(formattedData);
-      }
-    };
-    fetchBoletos();
+  const fetchBoletos = useCallback(async () => {
+    const { data, error } = await supabase.from('boletos').select('*');
+    if (error) {
+      console.error("Erro ao buscar boletos:", error);
+    } else {
+      const formattedData = data.map(item => ({
+        id: item.id,
+        guardianId: item.guardian_id,
+        amount: item.amount,
+        dueDate: item.due_date,
+        status: item.status as Boleto['status'],
+        filePath: item.file_path,
+      }));
+      setBoletos(formattedData);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchBoletos();
+
+    const channel = supabase
+      .channel('public:boletos')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'boletos' }, () => {
+        fetchBoletos();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchBoletos]);
 
   const totalUsers = students.length + guardians.length + teachers.length;
   const totalPendingAmount = boletos

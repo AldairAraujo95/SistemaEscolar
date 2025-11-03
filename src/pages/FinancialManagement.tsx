@@ -227,7 +227,8 @@ const FinancialManagement = () => {
       showError("Erro ao excluir o boleto.");
     } else {
       showSuccess("Boleto excluído com sucesso!");
-      fetchBoletos();
+      // Atualiza o estado local para refletir a exclusão imediatamente
+      setBoletos(prevBoletos => prevBoletos.filter(b => b.id !== deletingBoleto.id));
     }
     setDeletingBoleto(null);
   };

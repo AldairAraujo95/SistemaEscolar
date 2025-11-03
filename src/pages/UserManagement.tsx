@@ -10,6 +10,8 @@ import {
 import { AddUserDialog } from "@/components/user-management/AddUserDialog";
 import { DeleteConfirmationDialog } from "@/components/user-management/DeleteConfirmationDialog";
 import { EditTeacherDialog } from "@/components/user-management/EditTeacherDialog";
+import { EditStudentDialog } from "@/components/user-management/EditStudentDialog";
+import { EditGuardianDialog } from "@/components/user-management/EditGuardianDialog";
 import { students as initialStudents, guardians as initialGuardians, teachers as initialTeachers } from "@/data/users";
 import { classes as initialClasses, disciplines as initialDisciplines } from "@/data/academic";
 import type { Student, Guardian, Teacher, Class, Discipline } from "@/types";
@@ -21,6 +23,16 @@ const UserManagement = () => {
   const [teachers, setTeachers] = useState<Teacher[]>(initialTeachers);
   const [classes] = useState<Class[]>(initialClasses);
   const [disciplines] = useState<Discipline[]>(initialDisciplines);
+
+  // Student state
+  const [editingStudent, setEditingStudent] = useState<Student | null>(null);
+  const [deletingStudentId, setDeletingStudentId] = useState<string | null>(null);
+
+  // Guardian state
+  const [editingGuardian, setEditingGuardian] = useState<Guardian | null>(null);
+  const [deletingGuardianId, setDeletingGuardianId] = useState<string | null>(null);
+
+  // Teacher state
   const [deletingTeacherId, setDeletingTeacherId] = useState<string | null>(null);
   const [editingTeacher, setEditingTeacher] = useState<Teacher | null>(null);
 
@@ -53,6 +65,54 @@ const UserManagement = () => {
     showSuccess("Usuário adicionado com sucesso!");
   };
 
+  // --- Student Handlers ---
+  const handleEditStudent = (student: Student) => {
+    setEditingStudent(student);
+  };
+
+  const handleUpdateStudent = (updatedStudent: Student) => {
+    setStudents(students.map(s => s.id === updatedStudent.id ? updatedStudent : s));
+    setEditingStudent(null);
+    showSuccess("Aluno atualizado com sucesso!");
+  };
+
+  const handleDeleteStudent = (studentId: string) => {
+    setDeletingStudentId(studentId);
+  };
+
+  const confirmDeleteStudent = () => {
+    if (deletingStudentId) {
+      setStudents(students.filter((s) => s.id !== deletingStudentId));
+      setDeletingStudentId(null);
+      showSuccess("Aluno excluído com sucesso!");
+    }
+  };
+
+  // --- Guardian Handlers ---
+  const handleEditGuardian = (guardian: Guardian) => {
+    setEditingGuardian(guardian);
+  };
+
+  const handleUpdateGuardian = (updatedGuardian: Guardian) => {
+    setGuardians(guardians.map(g => g.id === updatedGuardian.id ? updatedGuardian : g));
+    setEditingGuardian(null);
+    showSuccess("Responsável atualizado com sucesso!");
+  };
+
+  const handleDeleteGuardian = (guardianId: string) => {
+    setDeletingGuardianId(guardianId);
+  };
+
+  const confirmDeleteGuardian = () => {
+    if (deletingGuardianId) {
+      setStudents(students.filter(s => s.guardianId !== deletingGuardianId));
+      setGuardians(guardians.filter((g) => g.id !== deletingGuardianId));
+      setDeletingGuardianId(null);
+      showSuccess("Responsável e alunos associados foram excluídos com sucesso!");
+    }
+  };
+
+  // --- Teacher Handlers ---
   const handleEditTeacher = (teacher: Teacher) => {
     setEditingTeacher(teacher);
   };
@@ -101,7 +161,12 @@ const UserManagement = () => {
               <CardDescription>Lista de todos os alunos cadastrados.</CardDescription>
             </CardHeader>
             <CardContent>
-              <StudentsTable students={students} guardians={guardians} />
+              <StudentsTable
+                students={students}
+                guardians={guardians}
+                onEdit={handleEditStudent}
+                onDelete={handleDeleteStudent}
+              />
             </CardContent>
           </Card>
         </TabsContent>
@@ -113,7 +178,11 @@ const UserManagement = () => {
               <CardDescription>Lista de todos os responsáveis cadastrados.</CardDescription>
             </CardHeader>
             <CardContent>
-              <GuardiansTable guardians={guardians} />
+              <GuardiansTable
+                guardians={guardians}
+                onEdit={handleEditGuardian}
+                onDelete={handleDeleteGuardian}
+              />
             </CardContent>
           </Card>
         </TabsContent>
@@ -131,13 +200,43 @@ const UserManagement = () => {
         </TabsContent>
       </Tabs>
 
+      {/* --- Dialogs --- */}
+      <EditStudentDialog
+        student={editingStudent}
+        guardians={guardians}
+        classes={classes}
+        open={!!editingStudent}
+        onOpenChange={(open) => !open && setEditingStudent(null)}
+        onSave={handleUpdateStudent}
+      />
+      <DeleteConfirmationDialog
+        open={!!deletingStudentId}
+        onOpenChange={(open) => !open && setDeletingStudentId(null)}
+        onConfirm={confirmDeleteStudent}
+        title="Confirmar Exclusão"
+        description="Tem certeza que deseja excluir este aluno? Esta ação não pode ser desfeita."
+      />
+
+      <EditGuardianDialog
+        guardian={editingGuardian}
+        open={!!editingGuardian}
+        onOpenChange={(open) => !open && setEditingGuardian(null)}
+        onSave={handleUpdateGuardian}
+      />
+      <DeleteConfirmationDialog
+        open={!!deletingGuardianId}
+        onOpenChange={(open) => !open && setDeletingGuardianId(null)}
+        onConfirm={confirmDeleteGuardian}
+        title="Confirmar Exclusão"
+        description="Tem certeza que deseja excluir este responsável? Todos os alunos associados também serão removidos. Esta ação não pode ser desfeita."
+      />
+
       <EditTeacherDialog
         teacher={editingTeacher}
         open={!!editingTeacher}
         onOpenChange={(open) => !open && setEditingTeacher(null)}
         onSave={handleUpdateTeacher}
       />
-
       <DeleteConfirmationDialog
         open={!!deletingTeacherId}
         onOpenChange={(open) => !open && setDeletingTeacherId(null)}

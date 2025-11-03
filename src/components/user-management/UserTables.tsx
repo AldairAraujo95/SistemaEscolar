@@ -19,9 +19,11 @@ import type { Student, Guardian, Teacher } from "@/types";
 interface StudentsTableProps {
   students: Student[];
   guardians: Guardian[];
+  onEdit: (student: Student) => void;
+  onDelete: (studentId: string) => void;
 }
 
-export const StudentsTable = ({ students, guardians }: StudentsTableProps) => {
+export const StudentsTable = ({ students, guardians, onEdit, onDelete }: StudentsTableProps) => {
   const getGuardianName = (guardianId: string) => {
     return guardians.find((g) => g.id === guardianId)?.name || "N/A";
   };
@@ -45,9 +47,23 @@ export const StudentsTable = ({ students, guardians }: StudentsTableProps) => {
             <TableCell>{getGuardianName(student.guardianId)}</TableCell>
             <TableCell>{student.class}</TableCell>
             <TableCell className="text-right">
-              <Button variant="ghost" size="icon">
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon">
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => onEdit(student)}>
+                    <Edit className="mr-2 h-4 w-4" />
+                    Editar
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => onDelete(student.id)} className="text-red-600">
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Excluir
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </TableCell>
           </TableRow>
         ))}
@@ -58,9 +74,11 @@ export const StudentsTable = ({ students, guardians }: StudentsTableProps) => {
 
 interface GuardiansTableProps {
   guardians: Guardian[];
+  onEdit: (guardian: Guardian) => void;
+  onDelete: (guardianId: string) => void;
 }
 
-export const GuardiansTable = ({ guardians }: GuardiansTableProps) => (
+export const GuardiansTable = ({ guardians, onEdit, onDelete }: GuardiansTableProps) => (
   <Table>
     <TableHeader>
       <TableRow>
@@ -77,9 +95,23 @@ export const GuardiansTable = ({ guardians }: GuardiansTableProps) => (
           <TableCell>{guardian.email}</TableCell>
           <TableCell>{guardian.phone}</TableCell>
           <TableCell className="text-right">
-            <Button variant="ghost" size="icon">
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => onEdit(guardian)}>
+                  <Edit className="mr-2 h-4 w-4" />
+                  Editar
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onDelete(guardian.id)} className="text-red-600">
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Excluir
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </TableCell>
         </TableRow>
       ))}

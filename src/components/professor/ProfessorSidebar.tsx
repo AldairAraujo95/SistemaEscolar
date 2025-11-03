@@ -1,4 +1,4 @@
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 import { BookOpen, Calendar, Activity, School, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
@@ -7,7 +7,6 @@ import { DeveloperCredit } from "../DeveloperCredit";
 
 const ProfessorSidebar = () => {
   const { logout, profile } = useAuth();
-  const navigate = useNavigate();
 
   const navItems = [
     { to: "/professor/academic", icon: BookOpen, label: "Gestão Acadêmica" },
@@ -17,7 +16,7 @@ const ProfessorSidebar = () => {
 
   const handleLogout = async () => {
     await logout();
-    // Navigation is now handled by ProtectedRoute
+    window.location.href = '/';
   };
 
   return (

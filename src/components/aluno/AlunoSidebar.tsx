@@ -1,4 +1,4 @@
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 import { DollarSign, Calendar, Activity, School, ClipboardCheck, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
@@ -7,7 +7,6 @@ import { DeveloperCredit } from "../DeveloperCredit";
 
 const AlunoSidebar = () => {
   const { logout, profile } = useAuth();
-  const navigate = useNavigate();
 
   const navItems = [
     { to: "/aluno/financial", icon: DollarSign, label: "Financeiro" },
@@ -18,7 +17,7 @@ const AlunoSidebar = () => {
 
   const handleLogout = async () => {
     await logout();
-    // Navigation is now handled by ProtectedRoute
+    window.location.href = '/';
   };
 
   return (

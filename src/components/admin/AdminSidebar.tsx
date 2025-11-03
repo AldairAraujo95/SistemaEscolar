@@ -1,4 +1,4 @@
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 import {
   LayoutDashboard,
   Users,
@@ -16,7 +16,6 @@ import { DeveloperCredit } from "../DeveloperCredit";
 
 const AdminSidebar = () => {
   const { logout } = useAuth();
-  const navigate = useNavigate();
 
   const navItems = [
     { to: "/admin", icon: LayoutDashboard, label: "Dashboard" },
@@ -29,7 +28,7 @@ const AdminSidebar = () => {
 
   const handleLogout = async () => {
     await logout();
-    // Navigation is now handled by ProtectedRoute
+    window.location.href = '/';
   };
 
   return (

@@ -37,6 +37,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   useEffect(() => {
+    setLoading(true);
+
     const fetchProfile = async (userId: string, currentRole: Role) => {
       if (!currentRole || currentRole === 'admin') {
         setProfile(null);
@@ -53,33 +55,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     };
 
-    setLoading(true);
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      const currentRole = localStorage.getItem('userRole') as Role;
-      if (session?.user && currentRole) {
-        fetchProfile(session.user.id, currentRole).finally(() => setLoading(false));
-      } else {
-        setLoading(false);
-      }
-    });
-
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
         const currentRole = localStorage.getItem('userRole') as Role;
 
-        if (_event === 'SIGNED_IN' && session?.user && currentRole) {
-          setLoading(true);
+        if (session?.user && currentRole) {
           await fetchProfile(session.user.id, currentRole);
-          setLoading(false);
         } else if (_event === 'SIGNED_OUT') {
           setProfile(null);
           handleSetRole(null);
-          setLoading(false);
         }
+        
+        setLoading(false);
       }
     );
 

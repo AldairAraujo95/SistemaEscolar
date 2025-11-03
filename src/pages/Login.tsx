@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { ArrowLeft } from 'lucide-react';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -53,6 +54,10 @@ const Login = () => {
               <Input id="password" type="password" required />
             </div>
             <Button type="submit" className="w-full">Entrar</Button>
+            <Button type="button" variant="outline" className="w-full" onClick={() => navigate('/')}>
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Voltar
+            </Button>
           </CardContent>
         </form>
       </Card>

@@ -37,8 +37,14 @@ const DialogContent = React.forwardRef<
       ref={ref}
       onPointerDownOutside={(event) => {
         const target = event.target as HTMLElement;
-        // Prevent dialog from closing when clicking on a select trigger or other popovers.
-        if (target.closest('[role="combobox"]') || target.closest('[data-radix-popover-trigger]')) {
+        // Prevent dialog from closing when clicking on a select/popover trigger or its content.
+        // This is crucial to prevent crashes from focus-trapping conflicts.
+        if (
+          target.closest('[role="combobox"]') ||
+          target.closest('[data-radix-popover-trigger]') ||
+          target.closest('[data-radix-select-content]') ||
+          target.closest('[data-radix-popover-content]')
+        ) {
           event.preventDefault();
         }
       }}

@@ -1,15 +1,15 @@
 export interface Guardian {
   id: string;
   name: string;
-  email: string;
-  phone: string;
+  email: string | null;
+  phone: string | null;
   dueDateDay: number; // Dia do mês para vencimento do boleto
 }
 
 export interface Teacher {
   id: string;
   name: string;
-  email: string;
+  email: string | null;
   subjects: string[];
   classes: string[];
 }
@@ -17,13 +17,13 @@ export interface Teacher {
 export interface Student {
   id: string;
   name: string;
-  cpf: string;
-  guardianId: string;
-  class: string; // Turma
+  cpf: string | null;
+  guardianId: string | null;
+  class: string | null; // Turma
 }
 
 export interface Discipline {
-  id: string;
+  id:string;
   name: string;
 }
 

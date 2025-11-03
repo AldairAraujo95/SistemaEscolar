@@ -35,8 +35,8 @@ export const EditGuardianDialog = ({ guardian, open, onOpenChange, onSave }: Edi
   useEffect(() => {
     if (guardian) {
       setName(guardian.name);
-      setEmail(guardian.email);
-      setPhone(guardian.phone);
+      setEmail(guardian.email || "");
+      setPhone(guardian.phone || "");
       setDueDateDay(guardian.dueDateDay);
     }
   }, [guardian]);

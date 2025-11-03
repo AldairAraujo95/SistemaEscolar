@@ -28,7 +28,7 @@ export const EditTeacherDialog = ({ teacher, open, onOpenChange, onSave }: EditT
   useEffect(() => {
     if (teacher) {
       setName(teacher.name);
-      setEmail(teacher.email);
+      setEmail(teacher.email || "");
       setSubjects(teacher.subjects.join(", "));
       setClasses(teacher.classes.join(", "));
     }
@@ -71,7 +71,7 @@ export const EditTeacherDialog = ({ teacher, open, onOpenChange, onSave }: EditT
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="edit-classes" className="text-right">Turmas</Label>
-            <Input id="edit-classes" value={classes} className="col-span-3" value={classes} onChange={(e) => setClasses(e.target.value)} />
+            <Input id="edit-classes" value={classes} className="col-span-3" onChange={(e) => setClasses(e.target.value)} />
           </div>
         </div>
         <DialogFooter>

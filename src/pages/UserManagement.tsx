@@ -33,8 +33,20 @@ const UserManagement = () => {
     if (studentsError || guardiansError || teachersError || classesError || disciplinesError) {
       showError("Erro ao carregar os dados.");
     } else {
-      setStudents(studentsData.map(s => ({ ...s, class: s.class_name })));
-      setGuardians(guardiansData.map(g => ({ ...g, dueDateDay: g.due_date_day })));
+      setStudents(studentsData.map(s => ({
+        id: s.id,
+        name: s.name,
+        cpf: s.cpf,
+        guardianId: s.guardian_id,
+        class: s.class_name,
+      })));
+      setGuardians(guardiansData.map(g => ({
+        id: g.id,
+        name: g.name,
+        email: g.email,
+        phone: g.phone,
+        dueDateDay: g.due_date_day,
+      })));
       setTeachers(teachersData);
       setClasses(classesData);
       setDisciplines(disciplinesData);

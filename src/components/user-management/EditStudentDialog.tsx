@@ -37,9 +37,9 @@ export const EditStudentDialog = ({ student, guardians, classes, open, onOpenCha
   useEffect(() => {
     if (student) {
       setName(student.name);
-      setCpf(student.cpf);
-      setClassName(student.class);
-      setGuardianId(student.guardianId);
+      setCpf(student.cpf || "");
+      setClassName(student.class || "");
+      setGuardianId(student.guardianId || "");
     }
   }, [student]);
 

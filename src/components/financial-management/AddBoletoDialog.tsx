@@ -36,6 +36,7 @@ export const AddBoletoDialog = ({ guardians, onSave }: AddBoletoDialogProps) => 
   const [amount, setAmount] = useState("");
   const [dueDate, setDueDate] = useState<Date | undefined>();
   const [file, setFile] = useState<File | null>(null);
+  const [isDatePickerOpen, setDatePickerOpen] = useState(false);
 
   const handleSave = () => {
     if (guardianId && amount && dueDate && file) {
@@ -51,6 +52,11 @@ export const AddBoletoDialog = ({ guardians, onSave }: AddBoletoDialogProps) => 
       setFile(null);
       setOpen(false);
     }
+  };
+
+  const handleDateSelect = (date: Date | undefined) => {
+    setDueDate(date);
+    setDatePickerOpen(false);
   };
 
   return (
@@ -100,7 +106,7 @@ export const AddBoletoDialog = ({ guardians, onSave }: AddBoletoDialogProps) => 
             <Label htmlFor="due-date" className="text-right">
               Vencimento
             </Label>
-            <Popover>
+            <Popover open={isDatePickerOpen} onOpenChange={setDatePickerOpen}>
               <PopoverTrigger asChild>
                 <Button
                   variant={"outline"}
@@ -114,7 +120,7 @@ export const AddBoletoDialog = ({ guardians, onSave }: AddBoletoDialogProps) => 
                 <Calendar
                   mode="single"
                   selected={dueDate}
-                  onSelect={setDueDate}
+                  onSelect={handleDateSelect}
                   initialFocus
                 />
               </PopoverContent>

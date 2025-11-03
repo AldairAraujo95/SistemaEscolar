@@ -17,11 +17,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { MoreHorizontal, Edit, TrendingUp, TrendingDown, CircleDollarSign, Download } from "lucide-react";
+import { MoreHorizontal, Edit, TrendingUp, TrendingDown, CircleDollarSign, Download, Trash2 } from "lucide-react";
 import { StatusBadge } from "@/components/financial-management/StatusBadge";
 import { EditBoletoDialog } from "@/components/financial-management/EditBoletoDialog";
 import { AddBoletoDialog } from "@/components/financial-management/AddBoletoDialog";
+import { BatchBoletoDialog } from "@/components/financial-management/BatchBoletoDialog";
 import { FinancialChart } from "@/components/financial-management/FinancialChart";
+import { DeleteConfirmationDialog } from "@/components/user-management/DeleteConfirmationDialog";
 import { guardians as initialGuardians } from "@/data/users";
 import type { Boleto, Guardian } from "@/types";
 import { showSuccess, showError } from "@/utils/toast";
@@ -38,6 +40,7 @@ const FinancialManagement = () => {
   const [selectedGuardian, setSelectedGuardian] = useState<string>("all");
   const [selectedStatus, setSelectedStatus] = useState<Boleto['status'] | 'all'>('all');
   const [editingBoleto, setEditingBoleto] = useState<Boleto | null>(null);
+  const [deletingBoleto, setDeletingBoleto] = useState<Boleto | null>(null);
 
   const fetchBoletos = useCallback(async () => {
     const { data, error } = await supabase
@@ -165,6 +168,70 @@ const FinancialManagement = () => {
     }
   };
 
+  const handleBatchGenerateBoletos = async ({ month, year, amount }: { month: number; year: number; amount: number }) => {
+    const guardiansWithoutBoleto = guardians.filter(guardian => {
+      return !boletos.some(boleto =>
+        boleto.guardianId === guardian.id &&
+        new Date(boleto.dueDate).getUTCFullYear() === year &&
+        new Date(boleto.dueDate).getUTCMonth() === month - 1
+      );
+    });
+
+    if (guardiansWithoutBoleto.length === 0) {
+      showSuccess("Todos os responsáveis já possuem boletos para este mês.");
+      return;
+    }
+
+    const boletosToInsert = guardiansWithoutBoleto.map(guardian => {
+      const dueDate = new Date(year, month - 1, guardian.dueDateDay);
+      return {
+        guardian_id: guardian.id,
+        amount: amount,
+        due_date: dueDate.toISOString().split('T')[0],
+        status: 'a vencer',
+      };
+    });
+
+    const { error } = await supabase.from('boletos').insert(boletosToInsert);
+
+    if (error) {
+      showError("Erro ao gerar boletos em lote.");
+      console.error(error);
+    } else {
+      showSuccess(`${boletosToInsert.length} boleto(s) gerado(s) com sucesso!`);
+      fetchBoletos();
+    }
+  };
+
+  const confirmDeleteBoleto = async () => {
+    if (!deletingBoleto) return;
+
+    if (deletingBoleto.filePath) {
+      const { error: storageError } = await supabase.storage
+        .from('boletos')
+        .remove([deletingBoleto.filePath]);
+      
+      if (storageError) {
+        showError("Erro ao remover o arquivo do boleto. A exclusão foi abortada.");
+        setDeletingBoleto(null);
+        return;
+      }
+    }
+
+    const { error } = await supabase
+      .from('boletos')
+      .delete()
+      .eq('id', deletingBoleto.id);
+
+    if (error) {
+      showError("Erro ao excluir o boleto.");
+    } else {
+      showSuccess("Boleto excluído com sucesso!");
+      fetchBoletos();
+    }
+    setDeletingBoleto(null);
+  };
+
   const handleDownload = async (filePath: string) => {
     const { data, error } = await supabase.storage.from('boletos').download(filePath);
     if (error) {
@@ -228,12 +295,17 @@ const FinancialManagement = () => {
       </div>
 
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
+        <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <CardTitle>Histórico Financeiro Detalhado</CardTitle>
             <CardDescription>Visualize e gerencie todos os boletos.</CardDescription>
           </div>
-          {role !== 'aluno' && <AddBoletoDialog guardians={guardians} onSave={handleAddBoleto} />}
+          {role !== 'aluno' && (
+            <div className="flex gap-2">
+              <BatchBoletoDialog onSave={handleBatchGenerateBoletos} />
+              <AddBoletoDialog guardians={guardians} onSave={handleAddBoleto} />
+            </div>
+          )}
         </CardHeader>
         <CardContent>
           <div className="flex flex-col sm:flex-row gap-4 mb-4">
@@ -312,6 +384,10 @@ const FinancialManagement = () => {
                               <Edit className="mr-2 h-4 w-4" />
                               Editar Status
                             </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => setDeletingBoleto(boleto)} className="text-red-600">
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Excluir
+                            </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
@@ -329,6 +405,14 @@ const FinancialManagement = () => {
         open={!!editingBoleto}
         onOpenChange={(open) => !open && setEditingBoleto(null)}
         onSave={handleUpdateBoleto}
+      />
+
+      <DeleteConfirmationDialog
+        open={!!deletingBoleto}
+        onOpenChange={(open) => !open && setDeletingBoleto(null)}
+        onConfirm={confirmDeleteBoleto}
+        title="Confirmar Exclusão"
+        description="Tem certeza que deseja excluir este boleto? O arquivo associado também será removido. Esta ação não pode ser desfeita."
       />
     </div>
   );
